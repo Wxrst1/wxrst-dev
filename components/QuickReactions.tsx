@@ -40,6 +40,7 @@ const THEME_REACTIONS: Record<string, string[]> = {
     [ThemeType.AUTUMN]: ['🍂', '🍁', '🎃', '🪵', '🧣', '☕'],
     [ThemeType.NEW_YEAR]: ['🍾', '🎆', '🥂', '🎊', '🕰️', '✨'],
     [ThemeType.CARNIVAL]: ['🎭', '🥁', '🎊', '🎷', '🍹', '🌈'],
+    [ThemeType.CELESTIAL_EMPIRE]: ['🐉', '🏮', '🎎', '🧧', '🉐', '🌸'],
     [ThemeType.EASTER]: ['🐰', '🥚', '🍫', '🧺', '🌷', '🐣'],
 };
 

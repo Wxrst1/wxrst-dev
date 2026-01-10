@@ -69,18 +69,27 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
 
     // Theme-based Styles
     const isHorror = theme === ThemeType.BLOOD_STAIN || theme === ThemeType.HORROR;
+    const isCelestial = theme === ThemeType.CELESTIAL_EMPIRE;
 
-    const inputClasses = isHorror
-        ? "w-full bg-zinc-950 border border-red-950/40 p-4 text-sm text-red-900 outline-none focus:border-red-600 font-['UnifrakturMaguntia'] italic placeholder:text-red-950"
-        : "w-full bg-black border border-white/10 p-3 text-xs text-white outline-none focus:border-cyan-500 font-mono";
+    let inputClasses = "w-full bg-black border border-white/10 p-3 text-xs text-white outline-none focus:border-cyan-500 font-mono";
+    let buttonClasses = "px-6 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-cyan-500 disabled:opacity-50 transition-colors";
+    let commentBorder = "border-white/10";
+    let commentName = "text-cyan-500 font-black";
+    let commentText = "text-white/80 font-mono";
 
-    const buttonClasses = isHorror
-        ? "px-8 bg-red-950 text-red-100 text-xs font-black uppercase tracking-[0.3em] hover:bg-red-600 disabled:opacity-50 transition-all font-serif"
-        : "px-6 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-cyan-500 disabled:opacity-50 transition-colors";
-
-    const commentBorder = isHorror ? "border-red-900/40" : "border-white/10";
-    const commentName = isHorror ? "text-red-600 font-['UnifrakturMaguntia']" : "text-cyan-500 font-black";
-    const commentText = isHorror ? "text-red-900/80 font-serif italic" : "text-white/80 font-mono";
+    if (isHorror) {
+        inputClasses = "w-full bg-zinc-950 border border-red-950/40 p-4 text-sm text-red-900 outline-none focus:border-red-600 font-['UnifrakturMaguntia'] italic placeholder:text-red-950";
+        buttonClasses = "px-8 bg-red-950 text-red-100 text-xs font-black uppercase tracking-[0.3em] hover:bg-red-600 disabled:opacity-50 transition-all font-serif";
+        commentBorder = "border-red-900/40";
+        commentName = "text-red-600 font-['UnifrakturMaguntia']";
+        commentText = "text-red-900/80 font-serif italic";
+    } else if (isCelestial) {
+        inputClasses = "w-full bg-[#0A1A10] border border-[#D4AF37]/30 p-3 text-xs text-[#D4AF37] outline-none focus:border-[#D4AF37] font-serif placeholder:text-[#D4AF37]/30 tracking-widest";
+        buttonClasses = "px-6 bg-[#D4AF37]/20 border border-[#D4AF37] text-[#D4AF37] text-[10px] font-black uppercase tracking-[0.3em] hover:bg-[#D4AF37] hover:text-[#0A1A10] disabled:opacity-50 transition-all font-serif";
+        commentBorder = "border-[#D4AF37]/30";
+        commentName = "text-[#D4AF37] font-['Cinzel'] font-bold";
+        commentText = "text-[#a3bfa8] font-serif italic";
+    }
 
     // Pagination Logic
     const totalPages = Math.ceil(comments.length / ITEMS_PER_PAGE);

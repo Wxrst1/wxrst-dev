@@ -354,9 +354,8 @@ const App: React.FC = () => {
         ThemeType.CYBERPUNK,
         ThemeType.THE_CORRUPTION,
         ThemeType.ALCHEMIST,
-        ThemeType.THE_EXORCISM,
-        ThemeType.CELESTIAL_EMPIRE
-      ].includes(theme)) && <Guestbook />}
+        ThemeType.THE_EXORCISM
+      ].includes(theme)) && <Guestbook theme={theme} />}
 
       <SecurityGateway
         isOpen={isLoginOpen}

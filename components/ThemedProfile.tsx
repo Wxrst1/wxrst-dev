@@ -468,46 +468,61 @@ const ThemedProfile: React.FC<ThemedProfileProps> = ({ theme, profile, onEdit })
 
       case ThemeType.CELESTIAL_EMPIRE:
         return (
-          <div className="relative w-[500px] bg-[#0A1A10] border-4 border-[#C8A050] p-12 shadow-[0_0_80px_rgba(200,160,80,0.2)] overflow-hidden group">
+          <div className="relative w-[500px] bg-[#0A1A10] border-4 border-[#C8A050] p-12 shadow-[0_0_80px_rgba(200,160,80,0.2)] overflow-hidden group perspective-1000 transform-style-3d hover:rotate-y-6 transition-transform duration-700">
+            {/* Holographic Gold Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#C8A050]/10 via-transparent to-[#F8E7B6]/10 opacity-50 mix-blend-overlay pointer-events-none" />
+
             {/* Background Texture: Silk Pattern */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: `url("https://www.transparenttextures.com/patterns/black-scales.png")` }} />
+            <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')] animate-[pulse_8s_infinite]" />
 
-            {/* Corner Ornaments */}
-            <div className="absolute top-0 left-0 w-20 h-20 border-t-8 border-l-8 border-[#C8A050]" />
-            <div className="absolute top-0 right-0 w-20 h-20 border-t-8 border-r-8 border-[#C8A050]" />
-            <div className="absolute bottom-0 left-0 w-20 h-20 border-b-8 border-l-8 border-[#C8A050]" />
-            <div className="absolute bottom-0 right-0 w-20 h-20 border-b-8 border-r-8 border-[#C8A050]" />
+            {/* Corner Ornaments - Enhanced */}
+            <div className="absolute top-0 left-0 w-24 h-24 border-t-[6px] border-l-[6px] border-[#C8A050] rounded-tl-3xl opacity-80" />
+            <div className="absolute top-0 right-0 w-24 h-24 border-t-[6px] border-r-[6px] border-[#C8A050] rounded-tr-3xl opacity-80" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 border-b-[6px] border-l-[6px] border-[#C8A050] rounded-bl-3xl opacity-80" />
+            <div className="absolute bottom-0 right-0 w-24 h-24 border-b-[6px] border-r-[6px] border-[#C8A050] rounded-br-3xl opacity-80" />
 
-            <div className="relative z-10 flex flex-col items-center gap-8">
-              {/* Avatar Frame */}
-              <div className="relative">
-                <div className="w-40 h-40 rounded-full border-4 border-[#C8A050] p-1 bg-[#1a0505] shadow-2xl relative z-10">
+            {/* Inner Border Frame */}
+            <div className="absolute inset-4 border border-[#C8A050]/30 pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col items-center gap-8 transform translate-z-10 bg-black/5 backdrop-blur-sm p-4 rounded-xl">
+              {/* Avatar Frame - Enhanced */}
+              <div className="relative group/avatar">
+                <div className="w-48 h-48 rounded-full border-4 border-[#C8A050] p-1 bg-[#1a0505] shadow-[0_0_50px_rgba(200,160,80,0.4)] relative z-10 transition-transform duration-500 group-hover/avatar:scale-105">
                   <img src={profile.avatarUrl} className="w-full h-full object-cover rounded-full grayscale brightness-90 contrast-125 sepia-[.3]" alt={profile.name} />
                 </div>
-                {/* Dragon Halo Animation */}
-                <div className="absolute inset-[-20px] rounded-full border border-[#C8A050]/30 animate-[spin_10s_linear_infinite]" />
-                <div className="absolute inset-[-10px] rounded-full border border-[#C8A050]/50 animate-[spin_15s_reverse_linear_infinite]" />
+                {/* Dragon Halo Animation - Layered */}
+                <div className="absolute inset-[-30px] rounded-full border border-[#C8A050]/20 animate-[spin_20s_linear_infinite]"
+                  style={{ backgroundImage: 'repeating-conic-gradient(from 0deg, transparent 0deg 20deg, #C8A05010 20deg 40deg)' }} />
+                <div className="absolute inset-[-15px] rounded-full border-2 border-[#C8A050]/40 border-dashed animate-[spin_30s_reverse_linear_infinite]" />
+                <div className="absolute inset-0 rounded-full shadow-[inset_0_0_50px_rgba(0,0,0,0.8)] z-20 pointer-events-none" />
               </div>
 
-              {/* Text Content */}
-              <div className="text-center space-y-2">
-                <h2 className="text-5xl font-['Cinzel'] font-black text-[#F8E7B6] drop-shadow-md uppercase tracking-wider">{profile.name}</h2>
+              {/* Text Content - Enhanced Typography */}
+              <div className="text-center space-y-4">
+                <h2 className="text-6xl font-['Cinzel'] font-black text-transparent bg-clip-text bg-gradient-to-b from-[#F8E7B6] to-[#C8A050] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] uppercase tracking-wider scale-y-110">
+                  {profile.name}
+                </h2>
                 <div className="flex items-center justify-center gap-4">
-                  <span className="h-px w-12 bg-[#C8A050]/50" />
-                  <p className="text-[10px] font-serif font-bold uppercase tracking-[0.4em] text-[#C8A050]">{profile.title}</p>
-                  <span className="h-px w-12 bg-[#C8A050]/50" />
+                  <span className="h-px w-16 bg-gradient-to-r from-transparent to-[#C8A050]" />
+                  <p className="text-xs font-serif font-black uppercase tracking-[0.5em] text-[#C8A050] drop-shadow-sm">{profile.title}</p>
+                  <span className="h-px w-16 bg-gradient-to-l from-transparent to-[#C8A050]" />
                 </div>
               </div>
 
-              <p className="text-sm font-serif italic text-white/60 text-center leading-relaxed max-w-sm border-t border-[#C8A050]/20 pt-6 mt-2">
+              <p className="text-sm font-serif italic text-white/70 text-center leading-relaxed max-w-sm border-t border-[#C8A050]/20 pt-6 mt-2 relative">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#0A1A10] px-2 text-[#C8A050] text-xl">❦</span>
                 "{profile.bio}"
               </p>
 
               {/* Social Links Customization */}
-              <SocialLinks socials={profile.socials} className="flex gap-6 justify-center" iconClass="w-5 h-5 fill-current text-[#C8A050] hover:text-[#d71920] hover:scale-110 transition-all duration-300" />
+              <div className="relative p-2">
+                <div className="absolute inset-0 bg-[#C8A050]/5 blur-xl rounded-full" />
+                <SocialLinks socials={profile.socials} className="flex gap-8 justify-center relative z-10" iconClass="w-6 h-6 fill-current text-[#C8A050] hover:text-[#FF4500] hover:drop-shadow-[0_0_10px_rgba(255,69,0,0.8)] transition-all duration-300 transform hover:-translate-y-1" />
+              </div>
 
-              <button onClick={onEdit} className="w-full py-3 mt-4 border border-[#C8A050] text-[#C8A050] font-serif uppercase tracking-[0.4em] text-[10px] hover:bg-[#C8A050] hover:text-[#0A1A10] transition-colors font-bold">
-                Consult Archives
+              <button onClick={onEdit} className="group/btn relative px-12 py-3 mt-4 overflow-hidden bg-transparent border border-[#C8A050] text-[#C8A050] font-serif uppercase tracking-[0.4em] text-[10px] font-bold transition-all hover:text-[#0A1A10]">
+                <div className="absolute inset-0 w-0 bg-[#C8A050] transition-all duration-[250ms] ease-out group-hover/btn:w-full opacity-100" />
+                <span className="relative z-10 group-hover/btn:text-black transition-colors">Consult Archives</span>
               </button>
             </div>
           </div>
