@@ -47,6 +47,7 @@ import HeistTheme from './components/themes/HeistTheme';
 import CorruptionTheme from './components/themes/CorruptionTheme';
 import MuseumTheme from './components/themes/MuseumTheme';
 import ExorcismTheme from './components/themes/ExorcismTheme';
+import DragonTheme from './components/themes/DragonTheme';
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeType>(() => {
@@ -259,6 +260,7 @@ const App: React.FC = () => {
       case ThemeType.VOID_COMMERCE: return <VoidCommerceTheme {...commonProps} />;
       case ThemeType.INTERROGATION_ROOM: return <InterrogationRoomTheme {...commonProps} />;
       case ThemeType.THE_EXORCISM: return <ExorcismTheme {...commonProps} />;
+      case ThemeType.CELESTIAL_EMPIRE: return <DragonTheme {...commonProps} />;
       case ThemeType.STEAMPUNK:
       default: return <SteampunkTheme {...commonProps} />;
     }
@@ -352,7 +354,8 @@ const App: React.FC = () => {
         ThemeType.CYBERPUNK,
         ThemeType.THE_CORRUPTION,
         ThemeType.ALCHEMIST,
-        ThemeType.THE_EXORCISM
+        ThemeType.THE_EXORCISM,
+        ThemeType.CELESTIAL_EMPIRE
       ].includes(theme)) && <Guestbook />}
 
       <SecurityGateway

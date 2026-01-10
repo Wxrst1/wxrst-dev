@@ -37,7 +37,8 @@ export enum ThemeType {
   THE_MUSEUM = 'THE_MUSEUM',
   MATRIX = 'MATRIX',
   STEAMPUNK = 'STEAMPUNK',
-  THE_EXORCISM = 'THE_EXORCISM'
+  THE_EXORCISM = 'THE_EXORCISM',
+  CELESTIAL_EMPIRE = 'CELESTIAL_EMPIRE'
 }
 
 export interface UserProfile {
