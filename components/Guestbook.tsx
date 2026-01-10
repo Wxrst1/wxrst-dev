@@ -165,21 +165,37 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
         </div>
     );
 
+
+
     if (isInline) return GuestbookContent;
 
     return (
         <div className={`fixed bottom-0 right-0 z-[100] w-full max-w-md transition-transform duration-500 ${isOpen ? 'translate-y-0' : 'translate-y-[calc(100%-40px)]'}`}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full bg-zinc-900 border-t border-x border-white/10 p-4 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-white hover:bg-zinc-800 transition-colors"
+                className={`w-full p-4 flex justify-between items-center text-[10px] font-black uppercase tracking-widest transition-colors
+                    ${isCelestial
+                        ? 'bg-[#0A1A10] border-t border-x border-[#D4AF37] text-[#D4AF37] hover:bg-[#1a0505]'
+                        : 'bg-zinc-900 border-t border-x border-white/10 text-white hover:bg-zinc-800'
+                    }`}
             >
                 <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-ping" />
-                    <span>Guestbook_System [{comments.length}]</span>
+                    <span className={`w-1.5 h-1.5 rounded-full animate-ping ${isCelestial ? 'bg-[#D4AF37]' : 'bg-cyan-500'}`} />
+                    <span>
+                        {isCelestial ? `Imperial Edicts [${comments.length}]` : `Guestbook_System [${comments.length}]`}
+                    </span>
                 </div>
-                <span>{isOpen ? 'Minimize' : 'Expand_Terminal'}</span>
+                <span>
+                    {isOpen
+                        ? (isCelestial ? 'Seal Scroll' : 'Minimize')
+                        : (isCelestial ? 'Unfurl' : 'Expand_Terminal')
+                    }
+                </span>
             </button>
-            <div className="h-[500px] bg-zinc-900 border-x border-white/10 shadow-2xl">
+            <div className={`h-[500px] border-x shadow-2xl ${isCelestial ? 'bg-[#0A1A10] border-[#D4AF37]' : 'bg-zinc-900 border-white/10'}`}>
+                {/* Decorative Scroll Top for Celestial Theme */}
+                {isCelestial && <div className="h-2 w-full bg-gradient-to-r from-[#D4AF37]/50 via-[#D4AF37] to-[#D4AF37]/50" />}
+
                 {GuestbookContent}
             </div>
         </div>
