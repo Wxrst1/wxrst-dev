@@ -80,17 +80,16 @@ const BloodStainTheme: React.FC<{
         [ AUDIO_{audioEnabled ? 'ON' : 'OFF'} ]
       </button>
 
-      {/* Dramatic Silhouette Background */}
-      <div className="fixed inset-0 pointer-events-none z-0 flex items-center justify-center overflow-hidden">
+      {/* Background Image */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
         <img
           src="/silhouette-scary-zombie-with-dramatic-background.jpg"
-          className="absolute w-full h-full object-cover opacity-60 mix-blend-hard-light animate-[pulse_10s_ease-in-out_infinite]"
           alt="Horror Silhouette"
+          className="w-full h-full object-cover opacity-40 mix-blend-multiply"
         />
-        {/* Dark Red Overlay to tint the image */}
-        <div className="absolute inset-0 bg-red-950/30 mix-blend-multiply" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black" />
+        <div className="absolute inset-0 bg-red-900/10 mix-blend-overlay" />
       </div>
-      EMPTY
 
       {/* Vein Network Background */}
       <div className="fixed inset-0 pointer-events-none z-0 opacity-30">
