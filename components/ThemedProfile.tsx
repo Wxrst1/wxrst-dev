@@ -466,6 +466,53 @@ const ThemedProfile: React.FC<ThemedProfileProps> = ({ theme, profile, onEdit })
           </div>
         );
 
+      case ThemeType.CELESTIAL_EMPIRE:
+        return (
+          <div className="relative w-[500px] bg-[#0A1A10] border-4 border-[#C8A050] p-12 shadow-[0_0_80px_rgba(200,160,80,0.2)] overflow-hidden group">
+            {/* Background Texture: Silk Pattern */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: `url("https://www.transparenttextures.com/patterns/black-scales.png")` }} />
+
+            {/* Corner Ornaments */}
+            <div className="absolute top-0 left-0 w-20 h-20 border-t-8 border-l-8 border-[#C8A050]" />
+            <div className="absolute top-0 right-0 w-20 h-20 border-t-8 border-r-8 border-[#C8A050]" />
+            <div className="absolute bottom-0 left-0 w-20 h-20 border-b-8 border-l-8 border-[#C8A050]" />
+            <div className="absolute bottom-0 right-0 w-20 h-20 border-b-8 border-r-8 border-[#C8A050]" />
+
+            <div className="relative z-10 flex flex-col items-center gap-8">
+              {/* Avatar Frame */}
+              <div className="relative">
+                <div className="w-40 h-40 rounded-full border-4 border-[#C8A050] p-1 bg-[#1a0505] shadow-2xl relative z-10">
+                  <img src={profile.avatarUrl} className="w-full h-full object-cover rounded-full grayscale brightness-90 contrast-125 sepia-[.3]" alt={profile.name} />
+                </div>
+                {/* Dragon Halo Animation */}
+                <div className="absolute inset-[-20px] rounded-full border border-[#C8A050]/30 animate-[spin_10s_linear_infinite]" />
+                <div className="absolute inset-[-10px] rounded-full border border-[#C8A050]/50 animate-[spin_15s_reverse_linear_infinite]" />
+              </div>
+
+              {/* Text Content */}
+              <div className="text-center space-y-2">
+                <h2 className="text-5xl font-['Cinzel'] font-black text-[#F8E7B6] drop-shadow-md uppercase tracking-wider">{profile.name}</h2>
+                <div className="flex items-center justify-center gap-4">
+                  <span className="h-px w-12 bg-[#C8A050]/50" />
+                  <p className="text-[10px] font-serif font-bold uppercase tracking-[0.4em] text-[#C8A050]">{profile.title}</p>
+                  <span className="h-px w-12 bg-[#C8A050]/50" />
+                </div>
+              </div>
+
+              <p className="text-sm font-serif italic text-white/60 text-center leading-relaxed max-w-sm border-t border-[#C8A050]/20 pt-6 mt-2">
+                "{profile.bio}"
+              </p>
+
+              {/* Social Links Customization */}
+              <SocialLinks socials={profile.socials} className="flex gap-6 justify-center" iconClass="w-5 h-5 fill-current text-[#C8A050] hover:text-[#d71920] hover:scale-110 transition-all duration-300" />
+
+              <button onClick={onEdit} className="w-full py-3 mt-4 border border-[#C8A050] text-[#C8A050] font-serif uppercase tracking-[0.4em] text-[10px] hover:bg-[#C8A050] hover:text-[#0A1A10] transition-colors font-bold">
+                Consult Archives
+              </button>
+            </div>
+          </div>
+        );
+
       case ThemeType.BLOOD_STAIN:
         return (
           <div className="p-10 bg-zinc-950 border-4 border-[#4a0404] shadow-[0_0_100px_rgba(74,4,4,0.4)] relative group overflow-hidden max-w-md">

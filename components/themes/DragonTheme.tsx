@@ -189,27 +189,8 @@ const DragonTheme: React.FC<{
                             style={{ backgroundImage: 'repeating-conic-gradient(from 0deg, transparent 0deg 10deg, #D4AF3710 10deg 20deg)' }} />
                         <div className="absolute inset-0 -m-4 border border-[#D4AF37]/40 rounded-full animate-[spin_40s_reverse_linear_infinite]" />
 
-                        {/* Actual Profile Card wrapped differently? 
-                  ThemedProfile usually renders its own card. We might just place it here.
-                  However, standard ThemedProfile has its own styles. 
-                  We'll use a hack or just wrap it and rely on its transparency if possible, 
-                  OR better, we render the data manually here if we want FULL custom "Scroll" look for the links
-                  But ThemedProfile handles the "User Info" part well.
-                  Let's just wrap ThemedProfile and apply a specific style class override if supported,
-                  or simply put it in a centered container that looks majestic.
-              */}
                         <div className="relative z-20 backdrop-blur-sm p-4 rounded-2xl border border-[#D4AF37]/30 bg-black/40 shadow-2xl">
-                            {/* Re-using ThemedProfile component but aiming for integration */}
-                            <ThemedProfile theme="BLOOD_STAIN" profile={profile} onEdit={onEditProfile} />
-                            {/* INTENTIONAL: Reuse BloodStain layout/props but override via CSS in this theme container if needed, 
-                     OR actually, ThemedProfile just renders the 'profile' view. 
-                     Wait, ThemedProfile takes a `theme` prop to decide ITS internal layout.
-                     If I pass a random theme like BLOOD_STAIN it might clash.
-                     If I pass CELESTIAL_EMPIRE to ThemedProfile, I need to update ThemedProfile too.
-                     For now, I'll pass 'DEFAULT' or 'CYBERPUNK' or update ThemedProfile. 
-                     Refactoring ThemedProfile is safer to get the 'Wheel of Fate' look specific.
-                     Actually, I'll just render the profile details manually here inside the Mandala to strictly follow "God-Tier Identity".
-                 */}
+                            <ThemedProfile theme="CELESTIAL_EMPIRE" profile={profile} onEdit={onEditProfile} />
                         </div>
                     </div>
                 </div>
