@@ -13,6 +13,12 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ currentTheme, onThemeChan
 
   const categories = [
     {
+      name: 'Supreme',
+      themes: [
+        { type: ThemeType.CELESTIAL_EMPIRE, label: 'Dynasty', icon: '🐉' },
+      ]
+    },
+    {
       name: 'Gameplay',
       themes: [
         { type: ThemeType.THE_MUSEUM, label: 'Museum', icon: '🖼️' },
@@ -57,7 +63,7 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ currentTheme, onThemeChan
         { type: ThemeType.BLOOD_STAIN, label: 'Visceral', icon: '🩸' },
         { type: ThemeType.HORROR, label: 'Horror', icon: '👻' },
         { type: ThemeType.THE_EXORCISM, label: 'Exorcism', icon: '†' },
-        { type: ThemeType.CELESTIAL_EMPIRE, label: 'Dragon', icon: '🐉' },
+        { type: ThemeType.THE_EXORCISM, label: 'Exorcism', icon: '†' },
         { type: ThemeType.NIGHTMARE, label: 'Night', icon: '🔪' },
         { type: ThemeType.SERIAL_KILLER, label: 'Case', icon: '🕵️' },
         { type: ThemeType.WAR, label: 'War', icon: '🪖' },
