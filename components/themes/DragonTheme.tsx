@@ -80,7 +80,7 @@ const SakuraParticles = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-20 mix-blend-screen opacity-60" />;
+    return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-1 mix-blend-screen opacity-60" />;
 };
 
 
@@ -108,14 +108,27 @@ const DragonTheme: React.FC<{
         audioRef.current.volume = 0.5;
     }, []);
 
-    // --- Track Mouse ---
+    // --- Track Mouse & Fire State ---
+    const isBreathingFire = useRef(false);
+    const fireParticles = useRef<{ x: number, y: number, vx: number, vy: number, life: number, size: number, color: string }[]>([]);
+
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             mouse.current.x = e.clientX;
             mouse.current.y = e.clientY;
         };
+        const handleMouseDown = () => { isBreathingFire.current = true; };
+        const handleMouseUp = () => { isBreathingFire.current = false; };
+
         window.addEventListener('mousemove', handleMouseMove);
-        return () => window.removeEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mousedown', handleMouseDown);
+        window.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mousedown', handleMouseDown);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
     }, []);
 
     // --- Loading State for Theme ---
@@ -243,6 +256,64 @@ const DragonTheme: React.FC<{
 
             ctx.restore();
 
+            // 5. Fire Breath System
+            // 5. Fire Breath System
+            if (isBreathingFire.current) {
+                // Spawn Fire Particles
+                // Calculate Mouth Position (Offset from center to mouth)
+                // Head angle points forward.
+                // We need to move Forward (to snout) and Down (to mouth/jaw).
+                const fwdOffset = 60;
+                const sideOffset = 25; // Positive = Down relative to head direction
+
+                const mouthX = head.x + Math.cos(angle) * fwdOffset - Math.sin(angle) * sideOffset;
+                const mouthY = head.y + Math.sin(angle) * fwdOffset + Math.cos(angle) * sideOffset;
+
+                // Spawn multiple particles per frame for density
+                for (let k = 0; k < 5; k++) {
+                    const spread = (Math.random() - 0.5) * 0.4;
+                    const speed = Math.random() * 12 + 8; // Faster fire
+                    fireParticles.current.push({
+                        x: mouthX + (Math.random() - 0.5) * 15,
+                        y: mouthY + (Math.random() - 0.5) * 15,
+                        vx: Math.cos(angle + spread) * speed,
+                        vy: Math.sin(angle + spread) * speed,
+                        life: 1.0,
+                        size: Math.random() * 15 + 8, // Bigger particles
+                        color: Math.random() > 0.4 ? '#FF4500' : '#FFD700'
+                    });
+                }
+            }
+
+            // Update & Draw Fire Particles with intense glow
+            ctx.globalCompositeOperation = 'screen';
+            for (let i = fireParticles.current.length - 1; i >= 0; i--) {
+                const p = fireParticles.current[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.025;
+                p.size += 0.6;
+                p.vx *= 0.96;
+                p.vy *= 0.96;
+
+                if (p.life <= 0) {
+                    fireParticles.current.splice(i, 1);
+                    continue;
+                }
+
+                ctx.beginPath();
+                const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+                // More intense opacity
+                grad.addColorStop(0, `rgba(255, 255, 220, ${p.life})`);
+                grad.addColorStop(0.3, p.color === '#FFD700' ? `rgba(255, 215, 0, ${p.life * 0.9})` : `rgba(255, 69, 0, ${p.life * 0.9})`);
+                grad.addColorStop(1, `rgba(50, 0, 0, 0)`);
+
+                ctx.fillStyle = grad;
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalCompositeOperation = 'source-over'; // Reset blend mode
+
             animationFrameId = requestAnimationFrame(render);
         };
 
@@ -309,11 +380,11 @@ const DragonTheme: React.FC<{
                 </div>
             </div>
 
-            {/* Canvas Dragon Layer */}
-            <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-50 mix-blend-screen" />
+            {/* Canvas Dragon Layer - Z-index fix to allow clicks on content */}
+            <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0 mix-blend-screen" />
 
             {/* Main Content Layout */}
-            <div className={`relative z-10 container mx-auto px-4 py-12 flex flex-col gap-16 transition-transform duration-500 ${shockwave ? 'scale-[1.02] rotate-1 blur-sm' : ''}`}>
+            <div className={`relative z-30 container mx-auto px-4 py-12 flex flex-col gap-16 transition-transform duration-500 ${shockwave ? 'scale-[1.02] rotate-1 blur-sm' : ''}`}>
 
                 {/* Header Section: Gong & Title */}
                 <header className="flex flex-col items-center justify-center gap-8 text-center mt-8 relative">
@@ -393,7 +464,19 @@ const DragonTheme: React.FC<{
                                         {/* Floating Category Seal */}
                                         <div className="w-16 h-16 bg-[#8B0000] rounded-xl flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.5)] border border-[#ff4d4d]/30 group-hover:rotate-12 transition-transform duration-500 relative overflow-hidden group/seal">
                                             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/rice-paper.png')] opacity-30" />
-                                            <span className="text-[#FFD700] font-black text-3xl font-serif z-10">{item.category.charAt(0)}</span>
+                                            {/* Chinese Symbol Mapping */}
+                                            <span className="text-[#FFD700] font-black text-4xl font-serif z-10 select-none">
+                                                {(() => {
+                                                    const cat = (item.category || '').toLowerCase();
+                                                    if (cat.includes('code') || cat.includes('dev') || cat.includes('git')) return '码'; // Code
+                                                    if (cat.includes('design') || cat.includes('art') || cat.includes('ui')) return '艺'; // Art
+                                                    if (cat.includes('video') || cat.includes('media') || cat.includes('play')) return '影'; // Movie/Shadow
+                                                    if (cat.includes('social') || cat.includes('chat') || cat.includes('comm')) return '社'; // Society
+                                                    if (cat.includes('game') || cat.includes('play')) return '玩'; // Play
+                                                    if (cat.includes('music') || cat.includes('sound')) return '乐'; // Music
+                                                    return '龙'; // Default Dragon
+                                                })()}
+                                            </span>
                                             <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-transparent" />
                                         </div>
 
@@ -413,7 +496,7 @@ const DragonTheme: React.FC<{
 
                                         {/* "Read Archives" Button Simulation */}
                                         <div className="w-full mt-auto pt-6 border-t border-[#D4AF37]/10 flex justify-between items-center group-hover:border-[#D4AF37]/30 transition-colors">
-                                            <span className="text-[10px] uppercase tracking-[0.2em] text-[#D4AF37]/50 font-bold group-hover:text-[#D4AF37] transition-colors">Classfied</span>
+                                            <span className="text-[10px] uppercase tracking-[0.2em] text-[#D4AF37]/50 font-bold group-hover:text-[#D4AF37] transition-colors">Classified</span>
                                             <span className="text-xl text-[#D4AF37] opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-500">→</span>
                                         </div>
                                     </div>
