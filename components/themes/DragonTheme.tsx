@@ -99,6 +99,8 @@ const DragonTheme: React.FC<{
     // --- Dragon Physics State ---
     const mouse = useRef({ x: 0, y: 0 });
     const trail = useRef(Array.from({ length: DRAGON_SEGMENTS }, () => ({ x: 0, y: 0 })));
+    const dragonHeadImg = useRef<HTMLImageElement | null>(null);
+    const lastAngle = useRef(0);
 
     // --- Audio Init ---
     useEffect(() => {
@@ -114,6 +116,15 @@ const DragonTheme: React.FC<{
         };
         window.addEventListener('mousemove', handleMouseMove);
         return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, []);
+
+    // --- Loading State for Theme ---
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        // Simulate theme asset loading (e.g. dragon head, fonts)
+        const timer = setTimeout(() => setIsLoading(false), 2500);
+        return () => clearTimeout(timer);
     }, []);
 
     // --- Canvas Render Loop ---
@@ -157,128 +168,89 @@ const DragonTheme: React.FC<{
                 curr.y += dy * 0.2 + Math.cos(time + i * 0.1) * 0.5;
             }
 
-            // 4. Draw Dragon
+            // 4. Draw Dragon Body (Updated Colors)
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
             // Shadow Blur
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = '#FFD700';
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#FF4500'; // Orange Red Shadow
 
-            // Inner Gold Core
-            ctx.beginPath();
-            ctx.moveTo(trail.current[0].x, trail.current[0].y);
-            for (let i = 1; i < DRAGON_SEGMENTS; i++) {
-                const p = trail.current[i];
-                ctx.lineTo(p.x, p.y);
-            }
-
-            // Gradient Stroke
+            // Gradient Stroke - Matching Head (Red -> Gold -> Blue accent)
             const gradient = ctx.createLinearGradient(
                 trail.current[0].x, trail.current[0].y,
                 trail.current[DRAGON_SEGMENTS - 1].x, trail.current[DRAGON_SEGMENTS - 1].y
             );
-            gradient.addColorStop(0, '#FFD700'); // Gold
-            gradient.addColorStop(0.3, '#FFA500'); // Orange
-            gradient.addColorStop(0.6, '#B22222'); // Fire Brick
-            gradient.addColorStop(1, '#8B0000'); // Dark Red
+            gradient.addColorStop(0, '#B22222'); // Fire Brick Red (Neck)
+            gradient.addColorStop(0.2, '#FFD700'); // Gold Body
+            gradient.addColorStop(0.5, '#D62828'); // Red Scales
+            gradient.addColorStop(0.8, '#4682B4'); // Steel Blue (Tail Tip accent)
+            gradient.addColorStop(1, '#FFD700'); // Gold Tip
 
             ctx.strokeStyle = gradient;
 
             // Dynamic Width based on index (tapering tail)
+            // Increased initial width to match huge head image
             for (let i = 0; i < DRAGON_SEGMENTS - 1; i++) {
                 const p1 = trail.current[i];
                 const p2 = trail.current[i + 1];
                 ctx.beginPath();
                 ctx.moveTo(p1.x, p1.y);
                 ctx.lineTo(p2.x, p2.y);
-                const width = Math.max(2, (DRAGON_SEGMENTS - i) * 1.2 * (1 + Math.sin(time * 5 + i) * 0.1)); // Pulsing width
+                // Thicker body to match 180px head
+                const width = Math.max(4, (DRAGON_SEGMENTS - i) * 1.8 * (1 + Math.sin(time * 5 + i) * 0.1));
                 ctx.lineWidth = width;
                 ctx.stroke();
             }
 
-            // Draw Detailed Dragon Head
+            // Draw Pngtree Dragon Head Image
             const head = trail.current[0];
             const neck = trail.current[2] || trail.current[1];
-            const angle = Math.atan2(head.y - neck.y, head.x - neck.x);
+
+            // Anti-Spin Logic: Only update angle if moving
+            const dx = head.x - neck.x;
+            const dy = head.y - neck.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > 2) {
+                lastAngle.current = Math.atan2(dy, dx);
+            }
+
+            const angle = lastAngle.current;
 
             ctx.save();
             ctx.translate(head.x, head.y);
             ctx.rotate(angle);
 
-            // 1. Glow
-            const headGlow = ctx.createRadialGradient(0, 0, 10, 0, 0, 60);
-            headGlow.addColorStop(0, 'rgba(255, 215, 0, 0.6)');
-            headGlow.addColorStop(1, 'transparent');
-            ctx.fillStyle = headGlow;
-            ctx.beginPath();
-            ctx.arc(0, 0, 60, 0, Math.PI * 2);
-            ctx.fill();
+            // Correct Logic:
+            // 1. Source is Left-Facing. We want Right-Facing standard. -> Always Flip X (-1, 1).
+            // 2. Standard Sprite Rotation puts Left Move Upside Down. -> Flip Y (1, -1) if Left.
+            // Combined: X always -1. Y is -1 if Left, 1 if Right.
+            const isLeft = Math.abs(angle) > Math.PI / 2;
+            ctx.scale(-1, isLeft ? -1 : 1);
 
-            // 2. Horns (Long, curved gold/bone color)
-            ctx.strokeStyle = '#F0E68C'; // Khaki / Bone
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            // Left Horn
-            ctx.moveTo(-10, -10);
-            ctx.quadraticCurveTo(-20, -30, -50, -40);
-            // Right Horn
-            ctx.moveTo(-10, 10);
-            ctx.quadraticCurveTo(-20, 30, -50, 40);
-            ctx.stroke();
-
-            // 3. Whiskers (Flowing sine wave)
-            ctx.strokeStyle = '#FFD700';
-            ctx.lineWidth = 1;
-            const whiskerTime = time * 3;
-            // Left Whisker
-            ctx.beginPath();
-            ctx.moveTo(10, -15);
-            ctx.bezierCurveTo(
-                30 + Math.sin(whiskerTime) * 10, -30,
-                10 + Math.cos(whiskerTime) * 10, -60,
-                50 + Math.sin(whiskerTime) * 20, -80
-            );
-            ctx.stroke();
-            // Right Whisker
-            ctx.beginPath();
-            ctx.moveTo(10, 15);
-            ctx.bezierCurveTo(
-                30 + Math.cos(whiskerTime) * 10, 30,
-                10 + Math.sin(whiskerTime) * 10, 60,
-                50 + Math.cos(whiskerTime) * 20, 80
-            );
-            ctx.stroke();
-
-            // 4. Main Head Shape (Snout)
-            ctx.fillStyle = '#8B0000'; // Dark Red base
-            ctx.beginPath();
-            ctx.moveTo(-15, -15); // Back top
-            ctx.lineTo(25, -10);  // Snout top
-            ctx.quadraticCurveTo(35, 0, 25, 10); // Nose tip
-            ctx.lineTo(-15, 15);  // Back bottom
-            ctx.quadraticCurveTo(-20, 0, -15, -15); // Back curve
-            ctx.fill();
-
-            // Gold Accents on Head
-            ctx.strokeStyle = '#FFD700';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // 5. Eyes (Glowing)
-            ctx.fillStyle = '#FFFFFF';
-            ctx.shadowColor = '#00FFFF';
-            ctx.shadowBlur = 15;
-            ctx.beginPath();
-            ctx.ellipse(5, -8, 4, 2, 0, 0, Math.PI * 2); // Left Eye
-            ctx.ellipse(5, 8, 4, 2, 0, 0, Math.PI * 2);  // Right Eye
-            ctx.fill();
-            ctx.shadowBlur = 0; // Reset blur
+            // Draw the image if loaded
+            if (dragonHeadImg.current) {
+                // Adjust scale and offset as needed based on the image dimensions
+                const size = 180;
+                // Offset calculation to align neck to body point (trail[0])
+                // Assuming neck is at right side of the image (since it points left)
+                // We draw centered at -size/2 ? No.
+                // If source points Left, Neck is likely on the Right edge?
+                // Let's rely on standard centering first, maybe tweak X offset if needed.
+                ctx.drawImage(dragonHeadImg.current, -size * 0.6, -size / 2, size, size);
+            }
 
             ctx.restore();
 
-
             animationFrameId = requestAnimationFrame(render);
+        };
+
+        // Preload Dragon Head Image
+        const img = new Image();
+        img.src = '/—Pngtree—dragon head festival dragon head_7213886.png';
+        img.onload = () => {
+            dragonHeadImg.current = img;
         };
 
         render();
@@ -315,6 +287,27 @@ const DragonTheme: React.FC<{
             </div>
 
             <SakuraParticles />
+
+            {/* --- Loading Screen Overlay --- */}
+            <div className={`fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-1000 ${isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <div className="relative">
+                    {/* Outer Spinner */}
+                    <div className="w-48 h-48 border-4 border-[#D4AF37]/30 border-t-[#D4AF37] rounded-full animate-spin" />
+                    {/* Inner Spinner */}
+                    <div className="absolute inset-4 border-2 border-[#8B0000]/30 border-b-[#8B0000] rounded-full animate-[spin_3s_reverse_linear_infinite]" />
+                    {/* Center Emblem */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-6xl animate-pulse">🐲</span>
+                    </div>
+                </div>
+                <div className="mt-8 flex flex-col items-center gap-2">
+                    <h2 className="text-2xl font-['Cinzel'] text-[#D4AF37] tracking-[0.2em] font-bold uppercase animate-pulse">
+                        Imperial Archives
+                    </h2>
+                    <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-[#8B0000] to-transparent" />
+                    <p className="text-[#a3bfa8] font-serif italic text-sm">Summoning the Eternal Dragon...</p>
+                </div>
+            </div>
 
             {/* Canvas Dragon Layer */}
             <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-50 mix-blend-screen" />
