@@ -575,6 +575,57 @@ const ThemedProfile: React.FC<ThemedProfileProps> = ({ theme, profile, onEdit })
           </div >
         );
 
+      case ThemeType.YIN_YANG:
+        return (
+          <div className="relative p-10 max-w-md mx-auto group perspective-1000">
+            {/* Background Glow */}
+            <div className="absolute inset-0 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-colors duration-700" />
+
+            {/* Revolving Ring */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full border-[3px] border-transparent border-t-[#FFD700] border-b-[#00FF00] animate-[spin_10s_linear_infinite]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full border border-white/20 animate-[spin_15s_reverse_linear_infinite]" />
+
+            <div className="relative z-10 flex flex-col items-center text-center">
+              {/* Split Avatar */}
+              <div className="relative w-48 h-48 mb-8 rounded-full overflow-hidden border-4 border-white/10 group-hover:scale-105 transition-transform duration-500">
+                {/* Left Side: Grayscale */}
+                <img
+                  src={profile.avatarUrl}
+                  alt="Left"
+                  className="absolute inset-0 w-full h-full object-cover grayscale brightness-125"
+                  style={{ clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0 100%)' }}
+                />
+                {/* Right Side: Inverted */}
+                <img
+                  src={profile.avatarUrl}
+                  alt="Right"
+                  className="absolute inset-0 w-full h-full object-cover invert filter contrast-125"
+                  style={{ clipPath: 'polygon(50% 0, 100% 0, 100% 100%, 50% 100%)' }}
+                />
+                {/* Central Line */}
+                <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white/50 -translate-x-1/2 shadow-[0_0_10px_white]" />
+              </div>
+
+              <h2 className="text-5xl font-['Orbitron'] font-bold text-white tracking-widest uppercase mb-2 mix-blend-difference">{profile.name}</h2>
+              <p className="text-base font-['Playfair_Display'] italic tracking-wide text-white/80 mb-6 mix-blend-difference">{profile.title}</p>
+
+              <div className="w-16 h-px bg-white/50 mb-6" />
+
+              <p className="text-sm font-['Playfair_Display'] leading-relaxed max-w-xs text-white/90 mb-8 mix-blend-difference">
+                "{profile.bio}"
+              </p>
+
+              <div className="mix-blend-difference">
+                <SocialLinks socials={profile.socials} className="flex gap-6 justify-center" iconClass="w-5 h-5 fill-current text-white hover:scale-125 transition-transform" />
+              </div>
+
+              <button onClick={onEdit} className="mt-8 text-[10px] font-['Orbitron'] uppercase tracking-[0.3em] border border-white px-6 py-2 hover:bg-white hover:text-black transition-colors mix-blend-difference">
+                Harmonize Data
+              </button>
+            </div>
+          </div>
+        );
+
       default:
         return (
           <div className="p-12 border border-white/10 bg-white/5 backdrop-blur-md rounded-2xl flex flex-col items-center gap-4 text-center">

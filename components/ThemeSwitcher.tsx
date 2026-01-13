@@ -13,9 +13,10 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ currentTheme, onThemeChan
 
   const categories = [
     {
-      name: 'Supreme',
+      name: 'Featured',
       themes: [
-        { type: ThemeType.CELESTIAL_EMPIRE, label: 'Dynasty', icon: '🐉' },
+        { type: ThemeType.YIN_YANG, label: 'Dualism', icon: '☯' },
+        { type: ThemeType.CELESTIAL_EMPIRE, label: 'Imperial', icon: '🐉' },
       ]
     },
     {
@@ -62,7 +63,6 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ currentTheme, onThemeChan
         { type: ThemeType.RUSTIC_HARVEST, label: 'Harvest', icon: '🚜' },
         { type: ThemeType.BLOOD_STAIN, label: 'Visceral', icon: '🩸' },
         { type: ThemeType.HORROR, label: 'Horror', icon: '👻' },
-        { type: ThemeType.THE_EXORCISM, label: 'Exorcism', icon: '†' },
         { type: ThemeType.THE_EXORCISM, label: 'Exorcism', icon: '†' },
         { type: ThemeType.NIGHTMARE, label: 'Night', icon: '🔪' },
         { type: ThemeType.SERIAL_KILLER, label: 'Case', icon: '🕵️' },

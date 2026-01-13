@@ -1,5 +1,6 @@
 
 export enum ThemeType {
+  YIN_YANG = 'YIN_YANG',
   CHRISTMAS = 'CHRISTMAS',
   HALLOWEEN = 'HALLOWEEN',
   NEW_YEAR = 'NEW_YEAR',

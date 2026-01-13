@@ -48,6 +48,7 @@ import CorruptionTheme from './components/themes/CorruptionTheme';
 import MuseumTheme from './components/themes/MuseumTheme';
 import ExorcismTheme from './components/themes/ExorcismTheme';
 import DragonTheme from './components/themes/DragonTheme';
+import YinYangTheme from './components/themes/YinYangTheme';
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeType>(() => {
@@ -261,6 +262,7 @@ const App: React.FC = () => {
       case ThemeType.INTERROGATION_ROOM: return <InterrogationRoomTheme {...commonProps} />;
       case ThemeType.THE_EXORCISM: return <ExorcismTheme {...commonProps} />;
       case ThemeType.CELESTIAL_EMPIRE: return <DragonTheme {...commonProps} />;
+      case ThemeType.YIN_YANG: return <YinYangTheme {...commonProps} />;
       case ThemeType.STEAMPUNK:
       default: return <SteampunkTheme {...commonProps} />;
     }
@@ -268,6 +270,34 @@ const App: React.FC = () => {
 
   const renderLoadingScreen = () => {
     switch (theme) {
+      case ThemeType.YIN_YANG:
+        return (
+          <div className="flex flex-col items-center justify-center min-h-screen bg-white relative overflow-hidden">
+            {/* Diagonal Split Background */}
+            <div className="absolute inset-0 bg-black" style={{ clipPath: 'polygon(100% 0, 0 0, 0 100%)' }} />
+
+            <div className="relative z-10 flex flex-col items-center gap-12 mix-blend-difference text-white">
+              {/* Taijitu Spinner */}
+              <div className="w-32 h-32 rounded-full border-4 border-white flex items-center justify-center animate-[spin_3s_linear_infinite]">
+                <span className="text-8xl font-black font-['Orbitron'] pb-4 pr-1">☯</span>
+              </div>
+
+              <div className="text-center space-y-2">
+                <h2 className="text-4xl font-black font-['Orbitron'] tracking-[0.2em] uppercase">
+                  Restoring Balance
+                </h2>
+                <p className="text-sm font-['Playfair_Display'] italic tracking-wider opacity-80 animate-pulse">
+                  Integrating light and shadow...
+                </p>
+              </div>
+            </div>
+
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+             `}</style>
+          </div>
+        );
+
       case ThemeType.BLOOD_STAIN:
         return (
           <div className="flex flex-col items-center justify-center min-h-screen bg-[#050000] text-[#880808] font-['UnifrakturMaguntia'] uppercase tracking-widest relative overflow-hidden">
@@ -354,7 +384,8 @@ const App: React.FC = () => {
         ThemeType.CYBERPUNK,
         ThemeType.THE_CORRUPTION,
         ThemeType.ALCHEMIST,
-        ThemeType.THE_EXORCISM
+        ThemeType.THE_EXORCISM,
+        ThemeType.CELESTIAL_EMPIRE
       ].includes(theme)) && <Guestbook theme={theme} />}
 
       <SecurityGateway
