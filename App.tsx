@@ -49,6 +49,7 @@ import MuseumTheme from './components/themes/MuseumTheme';
 import ExorcismTheme from './components/themes/ExorcismTheme';
 import DragonTheme from './components/themes/DragonTheme';
 import YinYangTheme from './components/themes/YinYangTheme';
+import AkatsukiTheme from './components/themes/AkatsukiTheme';
 
 
 const App: React.FC = () => {
@@ -293,6 +294,7 @@ const App: React.FC = () => {
       case ThemeType.THE_EXORCISM: return <ExorcismTheme {...commonProps} />;
       case ThemeType.CELESTIAL_EMPIRE: return <DragonTheme {...commonProps} />;
       case ThemeType.YIN_YANG: return <YinYangTheme {...commonProps} />;
+      case ThemeType.AKATSUKI: return <AkatsukiTheme {...commonProps} />;
       case ThemeType.STEAMPUNK:
       default: return <SteampunkTheme {...commonProps} />;
     }
@@ -386,7 +388,7 @@ const App: React.FC = () => {
     <div className="relative w-full min-h-screen overflow-hidden bg-black transition-colors duration-1000">
 
       {/* Interactive Global Elements */}
-      {theme !== ThemeType.YIN_YANG && (
+      {theme !== ThemeType.YIN_YANG && theme !== ThemeType.AKATSUKI && (
         <>
           <VisitorCounter theme={theme} />
           <QuickReactions theme={theme} />
@@ -409,7 +411,8 @@ const App: React.FC = () => {
         ThemeType.ALCHEMIST,
         ThemeType.THE_EXORCISM,
         ThemeType.CELESTIAL_EMPIRE,
-        ThemeType.YIN_YANG
+        ThemeType.YIN_YANG,
+        ThemeType.AKATSUKI
       ].includes(theme)) && <Guestbook theme={theme} />}
 
       <SecurityGateway

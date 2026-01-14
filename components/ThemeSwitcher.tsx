@@ -16,6 +16,7 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ currentTheme, onThemeChan
       name: 'Featured',
       themes: [
         { type: ThemeType.YIN_YANG, label: 'The Balance', icon: '☯' },
+        { type: ThemeType.AKATSUKI, label: 'The Dawn', icon: '☁️' },
         { type: ThemeType.CELESTIAL_EMPIRE, label: 'Imperial', icon: '🐉' },
       ]
     },
