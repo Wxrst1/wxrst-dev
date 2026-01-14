@@ -70,6 +70,7 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
     // Theme-based Styles
     const isHorror = theme === ThemeType.BLOOD_STAIN || theme === ThemeType.HORROR;
     const isCelestial = theme === ThemeType.CELESTIAL_EMPIRE;
+    const isAkatsuki = theme === ThemeType.AKATSUKI;
 
     let inputClasses = "w-full bg-black border border-white/10 p-3 text-xs text-white outline-none focus:border-cyan-500 font-mono";
     let buttonClasses = "px-6 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-cyan-500 disabled:opacity-50 transition-colors";
@@ -89,6 +90,12 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
         commentBorder = "border-[#D4AF37]/30";
         commentName = "text-[#D4AF37] font-['Cinzel'] font-bold";
         commentText = "text-[#a3bfa8] font-serif italic";
+    } else if (isAkatsuki) {
+        inputClasses = "w-full bg-stone-950 border border-red-900/20 p-4 text-xs text-red-600 outline-none focus:border-red-600 font-['Cinzel'] placeholder:text-red-900/30 uppercase tracking-widest";
+        buttonClasses = "px-8 bg-red-900 text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-white hover:text-black disabled:opacity-50 transition-all font-['Cinzel']";
+        commentBorder = "border-red-900";
+        commentName = "text-red-600 font-['Cinzel_Decorative'] font-black tracking-widest";
+        commentText = "text-stone-400 font-serif italic";
     }
 
     // Pagination Logic
@@ -101,14 +108,14 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
             {/* Form */}
             <form onSubmit={handleSubmit} className="mb-6 space-y-2">
                 <input
-                    placeholder={isHorror ? "Sign the Covenant..." : "Identity / Name"}
+                    placeholder={isHorror ? "Sign the Covenant..." : isAkatsuki ? "Designation..." : "Identity / Name"}
                     className={inputClasses}
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
                 />
                 <div className="flex gap-2">
                     <input
-                        placeholder={isHorror ? "Whisper your last words..." : "Leave a transmission..."}
+                        placeholder={isHorror ? "Whisper your last words..." : isAkatsuki ? "Record transmission..." : "Leave a transmission..."}
                         className={inputClasses + " flex-1"}
                         value={newContent}
                         onChange={e => setNewContent(e.target.value)}
@@ -117,7 +124,7 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
                         disabled={isSubmitting}
                         className={buttonClasses}
                     >
-                        {isHorror ? "INVOKE" : "SEND"}
+                        {isHorror ? "INVOKE" : isAkatsuki ? "SEAL" : "SEND"}
                     </button>
                 </div>
             </form>
@@ -135,7 +142,7 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
                 ))}
                 {comments.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-white/20 font-black uppercase tracking-[0.2em] text-[10px]">
-                        {isHorror ? "THE_SILENCE_IS_DEAFENING" : "No_Detected_Signals"}
+                        {isHorror ? "THE_SILENCE_IS_DEAFENING" : isAkatsuki ? "ANONYMITY_REMAINS_ABSOLUTE" : "No_Detected_Signals"}
                     </div>
                 )}
             </div>
@@ -150,7 +157,7 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
                     >
                         [ PREV ]
                     </button>
-                    <span className={`text-[10px] font-mono ${isHorror ? "text-red-900" : "text-cyan-500"} uppercase tracking-widest animate-pulse`}>
+                    <span className={`text-[10px] font-mono ${isHorror ? "text-red-900" : isAkatsuki ? "text-red-600" : "text-cyan-500"} uppercase tracking-widest animate-pulse`}>
                         PAGE_{currentPage}_OF_{totalPages}
                     </span>
                     <button
@@ -176,13 +183,15 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
                 className={`w-full p-4 flex justify-between items-center text-[10px] font-black uppercase tracking-widest transition-colors
                     ${isCelestial
                         ? 'bg-[#0A1A10] border-t border-x border-[#D4AF37] text-[#D4AF37] hover:bg-[#1a0505]'
-                        : 'bg-zinc-900 border-t border-x border-white/10 text-white hover:bg-zinc-800'
+                        : isAkatsuki
+                            ? 'bg-black border-t border-x border-red-900 text-red-600 hover:bg-stone-900'
+                            : 'bg-zinc-900 border-t border-x border-white/10 text-white hover:bg-zinc-800'
                     }`}
             >
                 <div className="flex items-center gap-2">
-                    <span className={`w-1.5 h-1.5 rounded-full animate-ping ${isCelestial ? 'bg-[#D4AF37]' : 'bg-cyan-500'}`} />
+                    <span className={`w-1.5 h-1.5 rounded-full animate-ping ${isCelestial ? 'bg-[#D4AF37]' : isAkatsuki ? 'bg-red-600' : 'bg-cyan-500'}`} />
                     <span>
-                        {isCelestial ? `Imperial Edicts [${comments.length}]` : `Guestbook_System [${comments.length}]`}
+                        {isCelestial ? `Imperial Edicts [${comments.length}]` : isAkatsuki ? `Forbidden_Archive [${comments.length}]` : `Guestbook_System [${comments.length}]`}
                     </span>
                 </div>
                 <span>
@@ -192,7 +201,7 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
                     }
                 </span>
             </button>
-            <div className={`h-[500px] border-x shadow-2xl ${isCelestial ? 'bg-[#0A1A10] border-[#D4AF37]' : 'bg-zinc-900 border-white/10'}`}>
+            <div className={`h-[500px] border-x shadow-2xl ${isCelestial ? 'bg-[#0A1A10] border-[#D4AF37]' : isAkatsuki ? 'bg-black border-red-900' : 'bg-zinc-900 border-white/10'}`}>
                 {/* Decorative Scroll Top for Celestial Theme */}
                 {isCelestial && <div className="h-2 w-full bg-gradient-to-r from-[#D4AF37]/50 via-[#D4AF37] to-[#D4AF37]/50" />}
 

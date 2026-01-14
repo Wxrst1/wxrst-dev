@@ -1,6 +1,5 @@
 
 export enum ThemeType {
-  YIN_YANG = 'YIN_YANG',
   CHRISTMAS = 'CHRISTMAS',
   HALLOWEEN = 'HALLOWEEN',
   NEW_YEAR = 'NEW_YEAR',
@@ -39,7 +38,8 @@ export enum ThemeType {
   MATRIX = 'MATRIX',
   STEAMPUNK = 'STEAMPUNK',
   THE_EXORCISM = 'THE_EXORCISM',
-  CELESTIAL_EMPIRE = 'CELESTIAL_EMPIRE'
+  CELESTIAL_EMPIRE = 'CELESTIAL_EMPIRE',
+  YIN_YANG = 'YIN_YANG'
 }
 
 export interface UserProfile {
@@ -158,3 +158,4 @@ export const getAutoTheme = (): ThemeType => {
   if (m >= 9 && m <= 11) return ThemeType.AUTUMN;
   return ThemeType.AETHER_QUANTUM;
 };
+

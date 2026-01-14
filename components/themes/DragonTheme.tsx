@@ -288,19 +288,31 @@ const DragonTheme: React.FC<{
         // Visual Feedback & Next Hint
         setHuntMessage(`DRAGON BALL ${index + 1} ACQUIRED!`);
 
+        // Specific Side Effects for Hints
+        if (index === 2) { // Just found Ball 3, looking for Ball 4
+            // Subtle "System Trace" for hackers
+            console.log("%c[SYSTEM TRACE] %cSignal intercepted from sector 0x4 (Console)...",
+                "color: #0f0; font-family: monospace;",
+                "color: #888;"
+            );
+            console.groupCollapsed("%c > DECRYPT SIGNAL SOURCE", "color: #D4AF37; font-weight: bold; cursor: pointer;");
+            console.log("To awaken the guardian, execute: %cwindow.dragon.awaken(4)", "background: #222; color: #D4AF37; padding: 2px 4px; border-radius: 2px;");
+            console.groupEnd();
+        }
+
         // Clues for the NEXT ball
         setTimeout(() => {
             const hints = [
                 "SEEK THE SPINNING LIGHTS OF FATE (ROYGBIV)...", // Ball 1 -> 2
                 "THE ERAS OF HISTORY HOLD THE KEY...",          // Ball 2 -> 3
-                "THE DRAGON WHISPERS IN THE MACHINE'S MIND (F12)...", // Ball 3 -> 4
+                "THE DRAGON LIES DORMANT IN THE SILICON DEPTHS...", // Ball 3 -> 4
                 "LISTEN FOR THE HIDDEN MELODY...",             // Ball 4 -> 5
                 "REFLECTIONS LIE SHATTERED ON THE GLASS...",   // Ball 5 -> 6
                 "THE CIRCLE IS NEARLY COMPLETE... ONE REMAINS." // Ball 6 -> 7
             ];
             if (index < 6) {
                 setHuntMessage(hints[index]);
-                setTimeout(() => setHuntMessage(null), 5000);
+                setTimeout(() => setHuntMessage(null), 8000);
             } else {
                 setHuntMessage(null);
             }
@@ -525,7 +537,7 @@ const DragonTheme: React.FC<{
     return (
         <div
             ref={containerRef}
-            className={`relative min-h-screen overflow-hidden font-serif selection:bg-red-900 selection:text-gold transition-filters duration-200 ${shockwave ? 'brightness-150 contrast-125' : ''} ${isGoldenMode ? 'brightness-110 saturate-125 selection:bg-[#FFD700] selection:text-black' : ''}`}
+            className={`relative min-h-screen overflow-hidden font-serif selection:bg-red-900 selection:text-gold transition-filters duration-1000 ${shockwave ? 'brightness-110' : ''} ${isGoldenMode ? 'brightness-105 saturate-110 selection:bg-[#FFD700] selection:text-black' : ''}`}
             style={{
                 background: isGoldenMode
                     ? 'radial-gradient(circle at 50% 50%, #2a0a0a 0%, #1a0500 50%, #000000 100%)' // Warmer, richer background
@@ -932,6 +944,13 @@ const DragonTheme: React.FC<{
                                 onClick={() => {
                                     setIsGoldenMode(true);
                                     if (audioRef.current) audioRef.current.play();
+                                    // Properly close the sequence
+                                    setTimeout(() => {
+                                        setBallsFound(Array(7).fill(false)); // Optional: Reset balls or keep them? Keeping them found but closing modal.
+                                        setHuntStarted(false); // End the hunt state so UI clears
+                                        setHuntMessage("YOUR WISH HAS BEEN GRANTED.");
+                                        setTimeout(() => setHuntMessage(null), 5000);
+                                    }, 500);
                                 }}
                                 className="group relative px-10 py-5 bg-transparent border-2 border-[#FFD700] text-[#FFD700] font-black uppercase tracking-[0.3em] overflow-hidden transition-all hover:scale-105"
                             >

@@ -50,6 +50,7 @@ import ExorcismTheme from './components/themes/ExorcismTheme';
 import DragonTheme from './components/themes/DragonTheme';
 import YinYangTheme from './components/themes/YinYangTheme';
 
+
 const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeType>(() => {
     // Try to load from local storage first for instant detailed loading screens
@@ -249,7 +250,7 @@ const App: React.FC = () => {
       profile,
       onEditProfile: () => setIsEditorOpen(true),
       onLinkClick: handleLinkClick,
-      isAdmin
+      isAdmin,
     };
 
     switch (theme) {
@@ -299,31 +300,20 @@ const App: React.FC = () => {
 
   const renderLoadingScreen = () => {
     switch (theme) {
+
       case ThemeType.YIN_YANG:
         return (
           <div className="flex flex-col items-center justify-center min-h-screen bg-white relative overflow-hidden">
-            {/* Diagonal Split Background */}
             <div className="absolute inset-0 bg-black" style={{ clipPath: 'polygon(100% 0, 0 0, 0 100%)' }} />
-
             <div className="relative z-10 flex flex-col items-center gap-12 mix-blend-difference text-white">
-              {/* Taijitu Spinner */}
               <div className="w-32 h-32 rounded-full border-4 border-white flex items-center justify-center animate-[spin_3s_linear_infinite]">
                 <span className="text-8xl font-black font-['Orbitron'] pb-4 pr-1">☯</span>
               </div>
-
               <div className="text-center space-y-2">
-                <h2 className="text-4xl font-black font-['Orbitron'] tracking-[0.2em] uppercase">
-                  Restoring Balance
-                </h2>
-                <p className="text-sm font-['Playfair_Display'] italic tracking-wider opacity-80 animate-pulse">
-                  Integrating light and shadow...
-                </p>
+                <h2 className="text-4xl font-black font-['Orbitron'] tracking-[0.2em] uppercase">Restoring Balance</h2>
+                <p className="text-sm font-['Playfair_Display'] italic tracking-wider opacity-80 animate-pulse">Integrating light and shadow...</p>
               </div>
             </div>
-
-            <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
-             `}</style>
           </div>
         );
 
