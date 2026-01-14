@@ -22,12 +22,13 @@ const CHARACTERS: Record<AkatsukiCharacter, {
     glow: string;
     trait: 'FEATHERS' | 'GRAVITY' | 'KAMUI' | 'CHIDORI' | 'EMBERS';
     offset?: { x: number; y: number };
+    bloodline: string;
 }> = {
-    ITACHI: { name: 'Itachi Uchiha', eye: '/itachi_sharinga_15322269.png', quote: 'Forgive me, Sasuke. This is the end.', rank: 'S-Class', color: '#ff0000', glow: 'rgba(255,0,0,0.4)', trait: 'FEATHERS' },
-    PAIN: { name: 'Pain', eye: '/pain_rinnegan.png', quote: 'The world shall know pain.', rank: 'God-Class', color: '#b8a1cf', glow: 'rgba(184,161,207,0.4)', trait: 'GRAVITY' },
-    OBITO: { name: 'Obito Uchiha', eye: '/obito_sharinga_15322269.png', quote: 'I am no one. I don\'t want to be anyone.', rank: 'S-Class', color: '#ff4d00', glow: 'rgba(255,77,0,0.4)', trait: 'KAMUI' },
-    SASUKE: { name: 'Sasuke Uchiha', eye: '/sasuke_sharinga_15322269.png', quote: 'I have closed my eyes... My only goal is in the darkness.', rank: 'S-Class', color: '#ff0055', glow: 'rgba(255,0,85,0.4)', trait: 'CHIDORI', offset: { x: 0.12, y: 0.12 } },
-    MADARA: { name: 'Madara Uchiha', eye: '/madara_sharinga_12422269.png', quote: 'Wake up to reality.', rank: 'Legend-Class', color: '#880000', glow: 'rgba(136,0,0,0.4)', trait: 'EMBERS' },
+    ITACHI: { name: 'Itachi Uchiha', eye: '/itachi_sharinga_15322269.png', quote: 'Forgive me, Sasuke. This is the end.', rank: 'S-Class', color: '#ff0000', glow: 'rgba(255,0,0,0.4)', trait: 'FEATHERS', bloodline: 'UCHIHA' },
+    PAIN: { name: 'Pain', eye: '/pain_rinnegan.png', quote: 'The world shall know pain.', rank: 'God-Class', color: '#b8a1cf', glow: 'rgba(184,161,207,0.4)', trait: 'GRAVITY', bloodline: 'UZUMAKI' },
+    OBITO: { name: 'Obito Uchiha', eye: '/obito_sharinga_15322269.png', quote: 'I am no one. I don\'t want to be anyone.', rank: 'S-Class', color: '#ff4d00', glow: 'rgba(255,77,0,0.4)', trait: 'KAMUI', bloodline: 'UCHIHA' },
+    SASUKE: { name: 'Sasuke Uchiha', eye: '/sasuke_sharinga_15322269.png', quote: 'I have closed my eyes... My only goal is in the darkness.', rank: 'S-Class', color: '#ff0055', glow: 'rgba(255,0,85,0.4)', trait: 'CHIDORI', offset: { x: 0.12, y: 0.12 }, bloodline: 'UCHIHA' },
+    MADARA: { name: 'Madara Uchiha', eye: '/madara_sharinga_12422269.png', quote: 'Wake up to reality.', rank: 'Legend-Class', color: '#880000', glow: 'rgba(136,0,0,0.4)', trait: 'EMBERS', bloodline: 'UCHIHA' },
 };
 
 const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClick }) => {
@@ -426,7 +427,7 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                     <div className="mt-32 grid grid-cols-2 lg:grid-cols-4 gap-12 text-left border-y border-white/5 py-12 w-full max-w-4xl">
                         {[
                             { label: 'Souls_Caught', val: visitorCount.toLocaleString() },
-                            { label: 'Bloodline', val: 'UCHIHA' },
+                            { label: 'Bloodline', val: currentChar.bloodline },
                             { label: 'Eye_Status', val: selectedChar },
                             { label: 'Power_Level', val: currentChar.rank }
                         ].map(s => (
