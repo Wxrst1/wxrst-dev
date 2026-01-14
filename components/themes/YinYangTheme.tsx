@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ThemeType } from '../../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '../../supabase';
+import Guestbook from '../Guestbook';
 
 // --- PROPS ---
 interface YinYangThemeProps {
@@ -10,283 +11,267 @@ interface YinYangThemeProps {
     onEditProfile: (newProfile: any) => void;
 }
 
-// --- CONSTANTS ---
-const HISTORY_KEY = 'radical_yin_yang_memory';
-
 const YinYangTheme: React.FC<YinYangThemeProps> = ({ data, profile, onLinkClick }) => {
-    // --- STATE ---
-    // The system decides what to show based on behavior, not clicks.
-    const [mode, setMode] = useState<'NEUTRAL' | 'YIN' | 'YANG' | 'CHAOS'>('NEUTRAL');
-    const [memory, setMemory] = useState<string>(''); // Permanent history
-    const [profileVisible, setProfileVisible] = useState(false);
+    const [balance, setBalance] = useState(50); // 0 (Yin) - 100 (Yang)
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const [isIntro, setIsIntro] = useState(true);
 
-    // --- REFS (The Physics Engine) ---
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
     const requestRef = useRef<number>();
 
-    // System Variables (Mutable for performance)
-    const sys = useRef({
-        energy: 0,        // 0 to 100 (Instant velocity)
-        focus: 0,         // 0 to 100 (Accumulated stillness)
-        entropy: 0,       // 0 to 1000 (Total chaos caused)
-        mouse: { x: 0, y: 0, lx: 0, ly: 0 },
-        scroll: { y: 0, ly: 0 },
-        time: 0
-    });
+    // Integrated States
+    const [visitorCount, setVisitorCount] = useState<number>(0);
+    const [reactions, setReactions] = useState<Record<string, number>>({});
+    const [userReacted, setUserReacted] = useState<string | null>(null);
 
-    // --- INITIALIZATION ---
+    const activeEmojis = ['☯️', '🌀', '🌑', '🌌', '🧬', '📡'];
+
+    // --- INTRO SEQUENCE ---
     useEffect(() => {
-        // Check for permanent scars
-        const saved = localStorage.getItem(HISTORY_KEY);
-        if (saved) setMemory(saved);
+        const timer = setTimeout(() => setIsIntro(false), 2400);
+        return () => clearTimeout(timer);
     }, []);
 
-    // --- INPUT LISTENERS ---
+    // --- INTERACTION HANDLERS ---
     useEffect(() => {
         const handleMove = (e: MouseEvent) => {
-            sys.current.mouse.x = e.clientX;
-            sys.current.mouse.y = e.clientY;
-
-            // Interaction destroys Focus
-            sys.current.focus = Math.max(0, sys.current.focus - 5);
-        };
-
-        const handleScroll = () => {
-            sys.current.scroll.y = window.scrollY;
-            // Scroll builds Energy
-            sys.current.energy = Math.min(100, sys.current.energy + 5);
-            sys.current.focus = 0;
+            setMousePos({ x: e.clientX, y: e.clientY });
+            const xPct = (e.clientX / window.innerWidth) * 100;
+            setBalance(prev => prev + (xPct - prev) * 0.1);
         };
 
         window.addEventListener('mousemove', handleMove);
-        window.addEventListener('scroll', handleScroll);
-        return () => {
-            window.removeEventListener('mousemove', handleMove);
-            window.removeEventListener('scroll', handleScroll);
-        };
+        return () => window.removeEventListener('mousemove', handleMove);
     }, []);
 
-    // --- THE CORE LOOP (The Negotiator) ---
+    // --- DATA INTEGRATION (Visitors & Reactions) ---
+    useEffect(() => {
+        const fetchData = async () => {
+            // Visitors
+            const { data: visData } = await supabase.from('analytics').select('count').eq('key', 'total_visits').single();
+            if (visData) setVisitorCount(visData.count);
+
+            // Reactions
+            const { data: reactData } = await supabase.from('reactions').select('*');
+            if (reactData) {
+                const counts: Record<string, number> = {};
+                reactData.forEach(r => counts[r.emoji] = r.count);
+                setReactions(counts);
+            }
+        };
+
+        fetchData();
+
+        const channel = supabase.channel('singularity-updates')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, fetchData)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'analytics' }, fetchData)
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, []);
+
+    const handleReact = async (emoji: string) => {
+        if (userReacted === emoji) return;
+        const currentCount = reactions[emoji] || 0;
+        const { error } = await supabase.from('reactions').upsert({ emoji, count: currentCount + 1 }, { onConflict: 'emoji' });
+        if (!error) {
+            setUserReacted(emoji);
+            setReactions(prev => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
+        }
+    };
+
+    // --- CANVAS ENGINE ---
     useEffect(() => {
         if (!canvasRef.current) return;
         const ctx = canvasRef.current.getContext('2d');
         if (!ctx) return;
 
         let frame = 0;
+        const particles: { x: number; y: number; vx: number; vy: number; size: number }[] = [];
+        for (let i = 0; i < 200; i++) {
+            particles.push({
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                vx: (Math.random() - 0.5) * 1,
+                vy: (Math.random() - 0.5) * 1,
+                size: Math.random() * 2
+            });
+        }
 
-        const loop = () => {
+        const animate = () => {
             frame++;
-            const s = sys.current;
-            s.time++;
-
-            // 1. CALCULATE DERIVATIVES
-            const dx = s.mouse.x - s.mouse.lx;
-            const dy = s.mouse.y - s.mouse.ly;
-            const mouseSpeed = Math.sqrt(dx * dx + dy * dy);
-
-            const dyScroll = Math.abs(s.scroll.y - s.scroll.ly);
-
-            // 2. UPDATE SYSTEM STATE
-            // Energy decays; Movement adds Energy
-            s.energy = s.energy * 0.95 + (mouseSpeed * 0.5 + dyScroll * 2);
-            s.energy = Math.min(100, s.energy); // Cap
-
-            // Focus builds slowly if Energy is low
-            if (s.energy < 5) s.focus = Math.min(100, s.focus + 0.5);
-            else s.focus = Math.max(0, s.focus - 2);
-
-            // Entropy builds with excessive Energy
-            if (s.energy > 80) s.entropy++;
-
-            // Update Previous
-            s.mouse.lx = s.mouse.x;
-            s.mouse.ly = s.mouse.y;
-            s.scroll.ly = s.scroll.y;
-
-
-            // 3. REACT (Determine Mode)
-            // This drives the React UI updates, throttled
-            if (frame % 10 === 0) {
-                if (s.energy > 60) setMode('YANG'); // Fast, Aggressive
-                else if (s.focus > 50) setMode('YIN'); // Still, Deep
-                else if (s.entropy > 500) setMode('CHAOS'); // Broken
-                else setMode('NEUTRAL'); // Waiting
-
-                // Content Visibility Threshold
-                if (s.focus > 20 || s.energy > 20) setProfileVisible(true);
-            }
-
-            // 4. RENDER (The Entity)
             const w = window.innerWidth;
             const h = window.innerHeight;
             canvasRef.current!.width = w;
             canvasRef.current!.height = h;
 
-            // Background
-            // If YANG: Flash White. If YIN: Deep Black.
-            const bgIntensity = s.energy / 100;
-            const bgLight = Math.floor(bgIntensity * 255);
+            const splitX = (balance / 100) * w;
 
-            // But we want restraint. No gradients.
-            // Just subtle noise or lines.
-            ctx.fillStyle = s.energy > 80 ? '#fff' : '#050505';
-            ctx.fillRect(0, 0, w, h);
+            // BACKGROUND: Pure Yin (Black) and Pure Yang (White)
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, splitX, h);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(splitX, 0, w - splitX, h);
 
-            // THE NEGOTIATION LINE
-            // A single line that divides the screen.
-            // Yin: Vertical, curved, organic.
-            // Yang: Horizontalish, jagged, glitchy.
-
+            // FLUID LIQUID DIVIDER
             ctx.beginPath();
-            ctx.strokeStyle = s.energy > 80 ? '#000' : '#fff';
-            ctx.lineWidth = 1 + (s.energy * 0.1);
-
-            // The line changes orientation based on energy
-            // Low Energy (Yin) = Vertical division (Balance)
-            // High Energy (YANG) = Horizontal cuts (Speed)
-
-            const startX = w / 2;
-            const startY = 0;
-
-            if (s.energy > 50) {
-                // YANG: Chaos Lines
-                ctx.moveTo(0, h / 2);
-                for (let x = 0; x < w; x += 10) {
-                    const jitter = (Math.random() - 0.5) * s.energy * 2;
-                    ctx.lineTo(x, h / 2 + jitter);
-                }
-            } else {
-                // YIN: The Thread
-                ctx.moveTo(w / 2, 0);
-                for (let y = 0; y < h; y += 10) {
-                    // It breathes
-                    const breathe = Math.sin(frame * 0.05) * s.focus;
-                    // It reacts to mouse proximity
-                    const distMouse = s.mouse.y - y;
-                    const repel = Math.abs(distMouse) < 200 ? (s.mouse.x - w / 2) * 0.5 : 0;
-
-                    ctx.lineTo(w / 2 + breathe - repel, y);
-                }
+            ctx.moveTo(splitX, 0);
+            for (let y = 0; y <= h; y += 10) {
+                const noise = Math.sin(y * 0.01 + frame * 0.02) * 40;
+                const distToMouse = Math.abs(y - mousePos.y);
+                const repel = distToMouse < 240 ? (1 - distToMouse / 240) * (mousePos.x - splitX) * 0.4 : 0;
+                ctx.lineTo(splitX + noise + repel, y);
             }
+            ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
+            ctx.lineWidth = 1;
             ctx.stroke();
 
-            // EASTER EGG: PERMANENT SCAR
-            // If entropy broke the system, draw the crack
-            if (memory === 'BROKEN' || s.entropy > 1000) {
-                if (s.entropy > 1000 && memory !== 'BROKEN') {
-                    localStorage.setItem(HISTORY_KEY, 'BROKEN');
-                    setMemory('BROKEN');
-                }
+            // PARTICLES (Inverting based on side)
+            particles.forEach(p => {
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+                if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
 
-                ctx.strokeStyle = '#ff0000';
+                ctx.fillStyle = p.x < splitX ? '#FFFFFF' : '#000000';
+                ctx.globalAlpha = 0.2;
                 ctx.beginPath();
-                ctx.moveTo(w * 0.8, 0);
-                ctx.lineTo(w * 0.2, h);
-                ctx.stroke();
-            }
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
 
-            requestRef.current = requestAnimationFrame(loop);
+            requestRef.current = requestAnimationFrame(animate);
         };
 
-        requestRef.current = requestAnimationFrame(loop);
+        requestRef.current = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(requestRef.current!);
+    }, [balance, mousePos]);
 
-    }, [memory]);
-
-
-    // --- UI RENDERING ---
-    // The UI is subtle. It fades in/out based on Mode.
+    if (isIntro) {
+        return (
+            <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center p-8 overflow-hidden font-mono">
+                <div className="relative w-48 h-48 border border-white/10 rounded-full flex items-center justify-center animate-[spin_10s_linear_infinite]">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full shadow-[0_0_15px_white]" />
+                    <div className="text-white text-[8px] tracking-[0.5em] uppercase">Initializing...</div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="relative min-h-[300vh] cursor-none overflow-hidden font-sans selection:bg-white selection:text-black">
-
-            {/* CANVAS LAYER */}
+        <div className="relative min-h-screen w-full bg-black overflow-hidden font-sans selection:bg-white selection:text-black">
+            {/* The World Layer */}
             <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none" />
 
-            {/* FLOATING HUD (The Observer) */}
-            <div className="fixed top-8 left-8 z-50 text-[10px] font-mono mix-blend-difference text-white opacity-50">
-                <div>SYS.ENERGY: {mode === 'YANG' ? 'CRITICAL' : 'STABLE'}</div>
-                <div>SYS.FOCUS: {mode === 'YIN' ? 'LOCKED' : 'DRIFTING'}</div>
-                {memory === 'BROKEN' && <div className="text-red-500">STATUS: FRACTURED</div>}
+            {/* The Lens (Cursor) */}
+            <div
+                className="fixed z-[100] pointer-events-none mix-blend-difference flex items-center justify-center transition-transform duration-75"
+                style={{ left: mousePos.x, top: mousePos.y, transform: 'translate(-50%, -50%)' }}
+            >
+                <div className="w-10 h-10 rounded-full border border-white opacity-50" />
+                <div className="absolute w-1 h-1 bg-white rounded-full" />
             </div>
 
-            {/* CONTENT LAYER */}
-            {/* Content reveals itself only when the user commits to a state */}
+            {/* MAIN CONTENT WRAPPER - Apply Difference Mode here */}
+            <div className="relative z-10 w-full min-h-screen flex flex-col lg:flex-row" style={{ mixBlendMode: 'difference' }}>
 
-            {/* YIN STATE REVEAL (Stillness) */}
-            {/* Shows deep philosophy, biography, "The Creator" */}
-            <div className={`fixed inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-1000 ${mode === 'YIN' ? 'opacity-100' : 'opacity-0'}`}>
-                <div className="max-w-2xl p-12 text-center mix-blend-difference text-white">
-                    <div className="w-1 bg-white h-24 mx-auto mb-8 animate-[growHeight_2s_ease-out]" />
-                    <h1 className="text-4xl font-serif italic mb-6">"Stillness reveals what speed conceals."</h1>
-                    <p className="text-sm font-mono leading-relaxed opacity-70 mb-12">{profile.bio}</p>
+                {/* YIN COLUMN (ORIGIN) */}
+                <section className="flex-1 flex flex-col justify-center p-8 lg:p-24 h-screen lg:h-auto pointer-events-none">
+                    <div className="max-w-xl transition-all duration-700 delay-100 pointer-events-auto" style={{ opacity: Math.max(0.4, (100 - balance) / 100) }}>
+                        <h2 className="text-white/50 text-[10px] font-mono tracking-[0.6em] mb-4 uppercase">IDENTITY_FRAGMENT</h2>
+                        <h1 className="text-white text-7xl lg:text-9xl font-black tracking-tighter mb-4 leading-none uppercase">
+                            {profile.name.split(' ')[0]}<br />
+                            <span className="opacity-30">{profile.name.split(' ')[1] || ''}</span>
+                        </h1>
+                        <p className="text-white text-xl lg:text-2xl font-serif italic leading-relaxed mb-12 opacity-90">
+                            {profile.bio}
+                        </p>
 
-                    <div className="grid grid-cols-2 gap-8 text-left pointer-events-auto">
-                        {data.slice(0, 4).map(item => (
-                            <div key={item.id} className="cursor-pointer group" onClick={() => onLinkClick(item.url)}>
-                                <div className="text-xs border-b border-white/20 pb-2 mb-2 group-hover:border-white transition-colors">{item.title}</div>
-                                <div className="text-[10px] opacity-0 group-hover:opacity-50 transition-opacity">{item.description}</div>
+                        <div className="flex flex-wrap gap-3 mt-12">
+                            {Object.entries(profile.socials || {})
+                                .filter(([_, value]) => value && typeof value === 'string' && value.trim() !== '')
+                                .map(([k, v]) => (
+                                    <a
+                                        key={k}
+                                        className="px-8 py-3 bg-white text-black font-mono text-[9px] uppercase tracking-[0.2em] font-bold hover:scale-110 hover:shadow-[0_0_20px_white] transition-all cursor-pointer pointer-events-auto"
+                                        href={v as string}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        [{k}]
+                                    </a>
+                                ))}
+                        </div>
+
+                        {/* NEW REACTIONS BAR */}
+                        <div className="mt-16 pt-8 border-t border-white/5">
+                            <h2 className="text-white/30 text-[9px] font-mono tracking-[0.4em] mb-6 uppercase">Resonating_Frequencies</h2>
+                            <div className="flex gap-4">
+                                {activeEmojis.map(emoji => (
+                                    <button
+                                        key={emoji}
+                                        onClick={() => handleReact(emoji)}
+                                        className={`flex flex-col items-center gap-2 group transition-all duration-500 ${userReacted === emoji ? 'opacity-100' : 'opacity-30 hover:opacity-100'}`}
+                                    >
+                                        <span className={`text-2xl transition-transform duration-500 group-hover:scale-125 ${userReacted === emoji ? 'drop-shadow-[0_0_10px_white]' : ''}`}>{emoji}</span>
+                                        <span className="text-[10px] font-mono text-white/50">{reactions[emoji] || 0}</span>
+                                    </button>
+                                ))}
                             </div>
-                        ))}
+                        </div>
                     </div>
-                </div>
-            </div>
+                </section>
 
-            {/* YANG STATE REVEAL (Velocity) */}
-            {/* Shows data, hard facts, "The Architect" */}
-            <div className={`fixed inset-0 pointer-events-none transition-opacity duration-200 ${mode === 'YANG' ? 'opacity-100' : 'opacity-0'}`}>
-                {/* Visual Noise Overlay */}
-                <div className="absolute inset-0 bg-white mix-blend-overlay opacity-10" />
+                {/* YANG COLUMN (ARCHIVE) */}
+                <section className="flex-1 flex flex-col justify-center p-8 lg:p-24 h-screen lg:h-auto items-end text-right overflow-y-auto pointer-events-none">
+                    <div className="w-full max-w-xl transition-all duration-700 pointer-events-auto" style={{ opacity: Math.max(0.4, balance / 100) }}>
+                        <h2 className="text-white/50 text-[10px] font-mono tracking-[0.6em] mb-8 uppercase">SYSTEM_ARCHIVE</h2>
+                        <div className="space-y-12 lg:space-y-16">
+                            {data.map((item, i) => (
+                                <a
+                                    key={item.id}
+                                    href={item.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="group block border-b border-white/10 pb-10 hover:border-white transition-all cursor-pointer pointer-events-auto no-underline"
+                                    onClick={(e) => {
+                                        // We let the link work normally, but call the tracking func
+                                        onLinkClick(item.id);
+                                    }}
+                                >
+                                    <div className="flex justify-between items-end mb-4">
+                                        <span className="text-[10px] font-mono text-white/30 tracking-widest group-hover:text-white transition-colors">0{i + 1}_LOG</span>
+                                        <h3 className="text-white text-4xl lg:text-7xl font-black tracking-tighter transition-all group-hover:italic group-hover:-translate-x-6">
+                                            {item.title}
+                                        </h3>
+                                    </div>
+                                    <p className="text-white text-sm opacity-0 group-hover:opacity-60 transition-all duration-500 max-w-sm ml-auto font-mono uppercase tracking-tight">
+                                        {item.description}
+                                    </p>
+                                </a>
+                            ))}
+                        </div>
 
-                <div className="absolute top-1/2 left-0 w-full -translate-y-1/2 overflow-hidden mix-blend-difference text-white">
-                    <h1 className="text-[20vw] font-black leading-none whitespace-nowrap animate-[scrollLeft_2s_linear_infinite]">
-                        VELOCITY VELOCITY VELOCITY {profile.name.toUpperCase()} SYSTEM ACTIVE
-                    </h1>
-                </div>
-
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-auto">
-                    <div className="grid grid-cols-1 gap-4 w-full max-w-4xl text-right mix-blend-difference text-white">
-                        {data.map((item, i) => (
-                            <div key={item.id}
-                                className="border-b-2 border-black/0 hover:border-white transition-all cursor-pointer p-4 flex justify-between items-baseline group"
-                                onClick={() => onLinkClick(item.url)}
-                            >
-                                <span className="text-4xl font-black group-hover:tracking-widest transition-all duration-300">{item.title}</span>
-                                <span className="font-mono text-xs">0{i} // ACTIVATE</span>
+                        {/* INTEGRATED GUESTBOOK */}
+                        <div className="mt-32 pt-16 border-t border-white/5">
+                            <h2 className="text-white/30 text-[9px] font-mono tracking-[0.4em] mb-12 uppercase">Temporal_Transmissions</h2>
+                            <div className="bg-white/5 backdrop-blur-3xl border border-white/5 p-8 rounded-sm">
+                                <Guestbook isInline theme="YIN_YANG" />
                             </div>
-                        ))}
+                        </div>
                     </div>
-                </div>
+                </section>
+
             </div>
 
-            {/* NEUTRAL STATE (The Void) */}
-            {/* Minimalist prompt to explore */}
-            <div className={`fixed inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-1000 ${mode === 'NEUTRAL' && !profileVisible ? 'opacity-100' : 'opacity-0'}`}>
-                <div className="text-center mix-blend-difference text-white">
-                    <div className="mb-4 text-xs font-mono uppercase tracking-[0.5em] animate-pulse">Waiting for Input</div>
-                    <div className="w-2 h-2 bg-white mx-auto rounded-full" />
-                </div>
+            {/* HUD OVERLAY */}
+            <div className="fixed bottom-12 left-12 mix-blend-difference text-white/20 text-[9px] font-mono tracking-[0.5em] z-50 pointer-events-none hidden lg:block">
+                SYSTEM_STABLE // POS_{Math.round(balance)}% // VISITORS_{visitorCount.toLocaleString()} // V_9.3
             </div>
 
-
-            {/* PERMANENT ALTERATION (Easter Egg) */}
-            {memory === 'BROKEN' && (
-                <div className="fixed bottom-4 right-4 font-mono text-[8px] text-red-500 opacity-50">
-                    ERR_SYSTEM_FRACTURED
-                </div>
-            )}
-
-            {/* MOUSE CURSOR (Reacts to Energy) */}
-            <div className="fixed z-[9999] pointer-events-none mix-blend-difference text-white transition-transform duration-75"
-                style={{ left: sys.current.mouse.x, top: sys.current.mouse.y, transform: 'translate(-50%, -50%)' }}>
-                <div className={`border border-white transition-all duration-300 ${mode === 'YANG' ? 'w-24 h-2 rounded-none rotate-45 bg-white' : 'w-4 h-4 rounded-full'}`} />
+            <div className="fixed top-8 left-1/2 -translate-x-1/2 mix-blend-difference text-white/20 text-[10px] font-mono tracking-[1.5em] z-50 pointer-events-none uppercase">
+                SINGULARITY
             </div>
-
-            <style>{`
-                @keyframes growHeight { 0% { height: 0; } 100% { height: 6rem; } }
-                @keyframes scrollLeft { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-            `}</style>
         </div>
     );
 };

@@ -386,8 +386,12 @@ const App: React.FC = () => {
     <div className="relative w-full min-h-screen overflow-hidden bg-black transition-colors duration-1000">
 
       {/* Interactive Global Elements */}
-      <VisitorCounter theme={theme} />
-      <QuickReactions theme={theme} />
+      {theme !== ThemeType.YIN_YANG && (
+        <>
+          <VisitorCounter theme={theme} />
+          <QuickReactions theme={theme} />
+        </>
+      )}
       {!([
         ThemeType.BLOOD_STAIN,
         ThemeType.AETHER_QUANTUM,
@@ -404,7 +408,8 @@ const App: React.FC = () => {
         ThemeType.THE_CORRUPTION,
         ThemeType.ALCHEMIST,
         ThemeType.THE_EXORCISM,
-        ThemeType.CELESTIAL_EMPIRE
+        ThemeType.CELESTIAL_EMPIRE,
+        ThemeType.YIN_YANG
       ].includes(theme)) && <Guestbook theme={theme} />}
 
       <SecurityGateway
