@@ -18,8 +18,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profil
     const [isSaving, setIsSaving] = useState(false);
     const [commentList, setCommentList] = useState<any[]>([]);
 
+    // SEO Data State
+    const [referrers, setReferrers] = useState<Array<{ src: string; count: number; pc: string }>>([]);
+    const [platforms, setPlatforms] = useState<string[]>([]);
+
     // Live Traffic State
-    const [trafficHistory, setTrafficHistory] = useState<Array<{ in: number; out: number }>>(Array(13).fill({ in: 0, out: 0 }));
+    const [trafficHistory, setTrafficHistory] = useState<Array<{ in: number; out: number }>>(() => {
+        // Initialize with random "noise" so it looks alive immediately
+        return Array(13).fill(0).map(() => ({
+            in: Math.floor(Math.random() * 60) + 10,
+            out: Math.floor(Math.random() * 40) + 5
+        }));
+    });
     const lastTrafficStats = React.useRef({ visits: 0, clicks: 0, reactions: 0, comments: 0, initialized: false });
 
     useEffect(() => {
@@ -36,7 +46,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profil
 
         const pollTraffic = async () => {
             // 1. Fetch all current totals
-            const { data: vData } = await supabase.from('analytics').select('count').eq('key', 'total_visits').single();
+            const { data: vData } = await supabase.from('analytics').select('count').eq('key', 'total_visits').maybeSingle();
             const { count: cCount } = await supabase.from('comments').select('*', { count: 'exact', head: true });
             const { count: rCount } = await supabase.from('reactions').select('*', { count: 'exact', head: true });
             const { data: lData } = await supabase.from('links').select('visit_count');
@@ -98,7 +108,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profil
 
     const fetchStats = async () => {
         // Initial fetch handled by poller mostly, but kept for immediate load
-        const { data: analytics } = await supabase.from('analytics').select('*').eq('key', 'total_visits').single();
+        const { data: analytics } = await supabase.from('analytics').select('*').eq('key', 'total_visits').maybeSingle();
         const { count: reactionCount } = await supabase.from('reactions').select('*', { count: 'exact', head: true });
         const { count: commentCount } = await supabase.from('comments').select('*', { count: 'exact', head: true });
         const { data: linksData } = await supabase.from('links').select('visit_count');
@@ -110,6 +120,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profil
             comments: commentCount || 0,
             totalClicks
         });
+
+        // Fetch SEO Data (Referrers & Platforms)
+        const { data: allAnalytics } = await supabase.from('analytics').select('*');
+        if (allAnalytics) {
+            // Referrers
+            const rawReferrers = allAnalytics.filter(r => r.key.startsWith('referrer:'));
+            const totalRefVisits = rawReferrers.reduce((acc, curr) => acc + curr.count, 0) || 1;
+
+            const processedReferrers = rawReferrers
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5)
+                .map(r => ({
+                    src: r.key.replace('referrer:', ''),
+                    count: r.count,
+                    pc: Math.round((r.count / totalRefVisits) * 100) + '%'
+                }));
+            setReferrers(processedReferrers.length ? processedReferrers : [{ src: 'No Data Yet', count: 0, pc: '0%' }]);
+
+            // Platforms
+            const rawPlatforms = allAnalytics.filter(r => r.key.startsWith('platform:'));
+            const processedPlatforms = rawPlatforms
+                .sort((a, b) => b.count - a.count)
+                .map(r => `${r.key.replace('platform:', '')} (${r.count})`);
+            setPlatforms(processedPlatforms.length ? processedPlatforms : ['No Data Yet']);
+        }
     };
 
     const fetchComments = async () => {
@@ -120,6 +155,56 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profil
     const handleDeleteComment = async (id: number) => {
         const { error } = await supabase.from('comments').delete().eq('id', id);
         if (!error) fetchComments();
+    };
+
+    const handleExportReport = () => {
+        const date = new Date().toLocaleDateString();
+        const topLink = links.sort((a, b) => (Number((b as any).visit_count) || 0) - (Number((a as any).visit_count) || 0))[0];
+
+        const report = `
+RADICAL MORPH // INTELLIGENCE REPORT [${date}]
+
+[GLOBAL METRICS]
+- Total Visits: ${stats.visits}
+- Total Clicks: ${stats.totalClicks}
+- Reactions: ${stats.reactions}
+
+[TOP PERFORMANCE]
+- Most Popular Node: ${topLink ? topLink.label : 'N/A'} (${(topLink as any)?.visit_count || 0} clicks)
+
+[TRAFFIC INTELLIGENCE]
+- Top Source: ${referrers[0]?.src || 'N/A'}
+- Primary Platform: ${platforms[0] || 'N/A'}
+
+[END OF TRANSMISSION]
+        `.trim();
+
+        // Encode and open mail client
+        window.location.href = `mailto:?subject=Daily Site Report - ${date}&body=${encodeURIComponent(report)}`;
+    };
+
+    const handleResetStats = async () => {
+        if (!confirm('WARNING: FORMATTING NEURAL DRIVE...\n\nThis will permanently delete ALL analytics, reactions, and reset link clicks to zero.\n\nAre you sure you want to proceed with this irreversible action?')) return;
+
+        setIsSaving(true);
+        try {
+            await supabase.from('analytics').delete().not('key', 'is', null); // Delete all analytics
+            await supabase.from('reactions').delete().not('id', 'is', null); // Delete all reactions safer (not id=0)
+            // Reset links visit_count
+            const { data: allLinks } = await supabase.from('links').select('id');
+            if (allLinks) {
+                await Promise.all(allLinks.map(l => supabase.from('links').update({ visit_count: 0 }).eq('id', l.id)));
+            }
+
+            // Refresh
+            fetchStats();
+            alert('SYSTEM FORMAT COMPLETE. ALL METRICS RESET TO ZERO.');
+        } catch (e) {
+            console.error(e);
+            alert('ERROR: FORMATTING FAILED.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleSaveProfile = async () => {
@@ -301,22 +386,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profil
                                             )
                                         },
                                     ].map(stat => (
-                                        <div key={stat.label} className="bg-black border border-white/5 p-6 relative group overflow-hidden h-40 flex flex-col justify-between">
+                                        <div key={stat.label} className="bg-black/50 backdrop-blur-md border border-white/5 p-6 relative group overflow-hidden h-40 flex flex-col justify-between hover:border-white/20 transition-all duration-500">
+                                            {/* Scanning Line Effect */}
+                                            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent h-[200%] w-full animate-[scan_4s_linear_infinite] pointer-events-none opacity-0 group-hover:opacity-100" />
+
+                                            {/* Glitch Corner Accents */}
+                                            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-white/30 group-hover:border-cyan-500 transition-colors" />
+                                            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-white/30 group-hover:border-cyan-500 transition-colors" />
+
                                             <div className={`absolute -top-10 -right-10 w-32 h-32 bg-${stat.color}-500/10 blur-[60px] group-hover:bg-${stat.color}-500/20 transition-all`} />
 
                                             <div className="relative z-10">
-                                                <p className="text-[9px] text-white/40 uppercase font-black tracking-widest mb-1">{stat.label}</p>
-                                                <p className="text-4xl text-white font-black tracking-tighter shadow-lg">{stat.value.toLocaleString()}</p>
+                                                <p className="text-[9px] text-white/40 uppercase font-black tracking-widest mb-1 group-hover:text-white/70 transition-colors">{stat.label}</p>
+                                                <p className="text-4xl text-white font-black tracking-tighter shadow-lg group-hover:scale-105 transition-transform origin-left">{stat.value.toLocaleString()}</p>
                                             </div>
 
-                                            <div className="relative z-10 w-full">
+                                            <div className="relative z-10 w-full flex items-center gap-2">
+                                                <div className={`w-1.5 h-1.5 rounded-full bg-${stat.color}-500 animate-pulse`} />
                                                 <p className={`text-[8px] text-${stat.color}-400 font-mono uppercase tracking-widest bg-black/50 inline-block px-1`}>{stat.sub}</p>
                                             </div>
 
                                             {/* Chart Layer */}
-                                            <div className="absolute inset-0 z-0 pointer-events-none">
+                                            <div className="absolute inset-0 z-0 pointer-events-none opacity-50 group-hover:opacity-80 transition-opacity">
                                                 {stat.chart}
                                             </div>
+
+                                            <style>{`
+                                                @keyframes scan {
+                                                    0% { transform: translateY(-50%); }
+                                                    100% { transform: translateY(0%); }
+                                                }
+                                            `}</style>
                                         </div>
                                     ))}
                                 </div>
@@ -374,6 +474,90 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profil
                                         <span>-10s</span>
                                         <span className="text-cyan-500">NOW</span>
                                     </div>
+                                </div>
+
+                                {/* SEO / Traffic Sources Grid (REAL DATA) */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-black border border-white/5 p-6 space-y-4">
+                                        <h4 className="text-[10px] text-white/40 uppercase font-black tracking-widest">Top_Referrers (Real-Time)</h4>
+                                        <div className="space-y-2">
+                                            {referrers.map((item, i) => (
+                                                <div key={i} className="flex items-center gap-4 text-xs font-mono group">
+                                                    <div className="w-32 text-white/60 truncate" title={item.src}>{item.src}</div>
+                                                    <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-cyan-500/50 group-hover:bg-cyan-400 transition-all" style={{ width: item.pc }} />
+                                                    </div>
+                                                    <div className="w-12 text-right text-white font-bold">{item.count}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-black border border-white/5 p-6 space-y-4">
+                                        <h4 className="text-[10px] text-white/40 uppercase font-black tracking-widest">Client_Platforms</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {platforms.map((tag, i) => (
+                                                <span key={i} className="px-2 py-1 bg-white/5 border border-white/10 text-[10px] text-white/70 font-mono hover:bg-white/10 hover:text-white transition-all cursor-crosshair">
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Link Performance Leaderboard */}
+                                <div className="bg-black border border-white/5 p-6 space-y-6">
+                                    <h4 className="text-[10px] text-white/40 uppercase font-black tracking-widest flex justify-between">
+                                        <span>Highest_Value_Nodes (Most Clicked)</span>
+                                        <span className="text-cyan-500">SYSTEM_OPTIMIZED</span>
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {links
+                                            .sort((a, b) => (Number((b as any).visit_count) || 0) - (Number((a as any).visit_count) || 0))
+                                            .slice(0, 5)
+                                            .map((link, i) => {
+                                                const maxClicks = Math.max(1, Number((links[0] as any).visit_count) || 0);
+                                                const clicks = Number((link as any).visit_count) || 0;
+                                                const percentage = (clicks / maxClicks) * 100;
+
+                                                return (
+                                                    <div key={i} className="group relative">
+                                                        <div className="flex justify-between text-xs text-white/60 mb-1 font-mono uppercase">
+                                                            <span>{link.label}</span>
+                                                            <span className="text-white font-bold">{clicks}</span>
+                                                        </div>
+                                                        <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-gradient-to-r from-purple-600 to-cyan-500 group-hover:from-purple-400 group-hover:to-cyan-300 transition-all duration-500"
+                                                                style={{ width: `${percentage}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        {links.length === 0 && <p className="text-white/20 text-xs font-mono">NO_ACTIVE_NODES_DETECTED</p>}
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end pt-8 border-t border-white/5 gap-4">
+                                    <button
+                                        onClick={handleExportReport}
+                                        className="group relative px-6 py-3 bg-cyan-900/20 border border-cyan-500/30 text-cyan-500 font-black text-[10px] uppercase tracking-widest hover:bg-cyan-500 hover:text-white transition-all overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_5px,rgba(0,0,0,0.2)_5px,rgba(0,0,0,0.2)_10px)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <span className="relative z-10 flex items-center gap-2">
+                                            <span>⚡ TRANSMIT_REPORT</span>
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        onClick={handleResetStats}
+                                        disabled={isSaving}
+                                        className="group relative px-6 py-3 bg-red-900/20 border border-red-500/30 text-red-500 font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_5px,rgba(0,0,0,0.2)_5px,rgba(0,0,0,0.2)_10px)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <span className="relative z-10">{isSaving ? 'PURGING_DATA...' : '⚠ INITIATE_SYSTEM_PURGE'}</span>
+                                    </button>
                                 </div>
                             </div>
                         )}

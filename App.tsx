@@ -66,9 +66,9 @@ const App: React.FC = () => {
   // Check for admin mode and fetch profile data
   useEffect(() => {
     // SECURITY UPDATE: Removed URL param check.
-    // Use Ctrl+Shift+L to access admin login.
+    // Use Ctrl+Shift+A for Admin Access
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'L') {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
         setIsLoginOpen(true);
       }
     };
@@ -82,10 +82,39 @@ const App: React.FC = () => {
 
   const recordVisit = async () => {
     try {
-      // Logic to record a visit
-      const { data } = await supabase.from('analytics').select('count').eq('key', 'total_visits').single();
+      // 1. Total Visits
+      const { data } = await supabase.from('analytics').select('count').eq('key', 'total_visits').maybeSingle();
       const currentCount = data?.count || 0;
       await supabase.from('analytics').upsert({ key: 'total_visits', count: currentCount + 1 }, { onConflict: 'key' });
+
+      // 2. Track Referrer (Real Data)
+      let referrer = 'Direct / Unknown';
+      if (document.referrer) {
+        try {
+          const url = new URL(document.referrer);
+          referrer = url.hostname;
+        } catch {
+          referrer = 'Unknown Source';
+        }
+      }
+      const refKey = `referrer:${referrer}`;
+      const { data: refData } = await supabase.from('analytics').select('count').eq('key', refKey).maybeSingle();
+      await supabase.from('analytics').upsert({ key: refKey, count: (refData?.count || 0) + 1 }, { onConflict: 'key' });
+
+      // 3. Track Device/Platform (Real Data for "Search Queries" replacement)
+      const userAgent = navigator.userAgent || '';
+      let platform = 'Unknown';
+      if (/android/i.test(userAgent)) platform = 'Android';
+      else if (/iPad|iPhone|iPod/.test(userAgent)) platform = 'iOS';
+      else if (/windows phone/i.test(userAgent)) platform = 'Windows Phone';
+      else if (/Win/i.test(userAgent)) platform = 'Windows';
+      else if (/Mac/i.test(userAgent)) platform = 'MacOS';
+      else if (/Linux/i.test(userAgent)) platform = 'Linux';
+
+      const platKey = `platform:${platform}`;
+      const { data: platData } = await supabase.from('analytics').select('count').eq('key', platKey).maybeSingle();
+      await supabase.from('analytics').upsert({ key: platKey, count: (platData?.count || 0) + 1 }, { onConflict: 'key' });
+
     } catch (e) {
       console.warn('Analytics tracking failed', e);
     }
@@ -392,6 +421,13 @@ const App: React.FC = () => {
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
         onLogin={() => setIsAdmin(true)}
+      />
+
+      {/* Invisible Admin Trigger (Bottom Right Corner) */}
+      <div
+        className="fixed bottom-0 right-0 w-4 h-4 z-[9999] cursor-default"
+        onDoubleClick={() => setIsLoginOpen(true)}
+        title=" " // Empty title to hide it
       />
 
       {isAdmin && (
