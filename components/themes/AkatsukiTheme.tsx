@@ -113,13 +113,22 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
         }
     };
 
-    // --- CANVAS ENGINE (The Hybrid God-Tier) ---
+    // --- CANVAS ENGINE (60FPS DEEP SMOOTHING) ---
     useEffect(() => {
         if (!canvasRef.current || isIntro) return;
-        const ctx = canvasRef.current.getContext('2d');
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        let frame = 0;
+        // Sync canvas size once and on resize
+        const handleResize = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+
+        let lastTime = performance.now();
         let blinkProgress = 1;
         let blinkPhase: 'IDLE' | 'CLOSING' | 'OPENING' = 'IDLE';
 
@@ -129,27 +138,32 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             x: Math.random() * window.innerWidth,
             y: Math.random() * window.innerHeight,
             s: Math.random() * 2 + 1,
-            v: Math.random() * 2 + 0.5,
+            v: Math.random() * 100 + 50, // Pixels per second
             a: Math.random() * Math.PI * 2,
-            rot: Math.random() * 0.1
+            rot: Math.random() * 2 + 1 // Radians per second
         });
+
+        let lightningActive = false;
+        const lightningStrike = () => {
+            if (Math.random() < 0.005 && !lightningActive) {
+                lightningActive = true;
+                setLightning(true); // Still update state for other UI components
+                setTimeout(() => {
+                    lightningActive = false;
+                    setLightning(false);
+                }, 80);
+            }
+        };
 
         const rain: any[] = [];
         for (let i = 0; i < 150; i++) rain.push({
             x: Math.random() * window.innerWidth,
             y: Math.random() * window.innerHeight,
             l: Math.random() * 25 + 15,
-            v: Math.random() * 15 + 10,
+            v: Math.random() * 600 + 400, // Pixels per second
             o: Math.random() * 0.2 + 0.1,
             c: i % 15 === 0 ? CHARACTERS[selectedChar].color : '#ffffff'
         });
-
-        const lightningStrike = () => {
-            if (Math.random() < 0.005) {
-                setLightning(true);
-                setTimeout(() => setLightning(false), 80);
-            }
-        };
 
         const drawProceduralRinnegan = (size: number) => {
             ctx.strokeStyle = '#000000';
@@ -173,11 +187,9 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             const eyeW = size * 2.8;
             const eyeH = size * 1.4;
 
-            // 1. Dynamic Eyelid Curve (Based on blink)
             const smoothedBlink = Math.sin(blink * Math.PI / 2);
             const currentH = eyeH * smoothedBlink;
 
-            // 2. Dynamic Eye Socket Clipping (The "Socket" itself closes)
             ctx.save();
             ctx.beginPath();
             ctx.moveTo(-eyeW, 0);
@@ -185,7 +197,6 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             ctx.quadraticCurveTo(0, currentH, -eyeW, 0);
             ctx.clip();
 
-            // 3. Sclera
             const scleraGrad = ctx.createRadialGradient(0, 0, size * 0.5, 0, 0, eyeW);
             scleraGrad.addColorStop(0, '#0f0a0a');
             scleraGrad.addColorStop(1, '#050303');
@@ -196,7 +207,6 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             ctx.quadraticCurveTo(0, eyeH, -eyeW, 0);
             ctx.fill();
 
-            // 4. Iris (No Rotation + Mouse Tracking)
             ctx.save();
             ctx.translate(look.x * (eyeW * 0.3), look.y * (eyeH * 0.25));
 
@@ -218,7 +228,6 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                 ctx.beginPath(); ctx.arc(0, 0, size * 0.22, 0, Math.PI * 2); ctx.fill();
             }
 
-            // 5. Ocular Depth Overlays
             ctx.save();
             ctx.globalCompositeOperation = 'overlay';
             ctx.strokeStyle = '#000000';
@@ -233,7 +242,6 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             }
             ctx.restore();
 
-            // 6. Surface Reflection
             ctx.save();
             ctx.setTransform(1, 0, 0, 1, x, y);
             ctx.fillStyle = '#ffffff';
@@ -241,11 +249,9 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             ctx.beginPath(); ctx.ellipse(-size * 0.4, -size * 0.4, size * 0.15, size * 0.25, -Math.PI / 4, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
 
-            ctx.restore(); // End Look-At Offset
+            ctx.restore(); // Look pivot
+            ctx.restore(); // Clipping
 
-            ctx.restore(); // End clipping
-
-            // 7. Dynamic Lash Lines (The frame itself moves)
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 14;
             ctx.lineCap = 'round';
@@ -255,43 +261,43 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             ctx.restore();
         };
 
-        const animate = () => {
-            frame++;
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            canvasRef.current!.width = w;
-            canvasRef.current!.height = h;
+        const animate = (currentTime: number) => {
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            const w = canvas.width;
+            const h = canvas.height;
 
             lightningStrike();
 
+            // Smooth Blink Logic (Delta based)
             if (blinkPhase === 'IDLE' && Math.random() < 0.004) blinkPhase = 'CLOSING';
-            const blinkSpeed = 0.12;
+            const blinkSpeed = 7.0; // Units per second
             if (blinkPhase === 'CLOSING') {
-                blinkProgress -= blinkSpeed;
+                blinkProgress -= blinkSpeed * deltaTime;
                 if (blinkProgress <= 0) { blinkProgress = 0; blinkPhase = 'OPENING'; }
             } else if (blinkPhase === 'OPENING') {
-                blinkProgress += blinkSpeed;
+                blinkProgress += blinkSpeed * deltaTime;
                 if (blinkProgress >= 1) { blinkProgress = 1; blinkPhase = 'IDLE'; }
             }
 
             const centerX = w / 2;
             const centerY = h / 2 - 40;
 
-            // Target Look Position (Normalized -1 to 1)
+            // Smooth Look Offset (Frame-rate independent lerp)
             const targetLookX = (mouseRef.current.x - centerX) / centerX;
             const targetLookY = (mouseRef.current.y - centerY) / centerY;
+            const lerpFactor = 1 - Math.exp(-6 * deltaTime); // Smooth 6.0 constant
+            lookOffset.current.x += (targetLookX - lookOffset.current.x) * lerpFactor;
+            lookOffset.current.y += (targetLookY - lookOffset.current.y) * lerpFactor;
 
-            // Lerp Look Offset
-            lookOffset.current.x += (targetLookX - lookOffset.current.x) * 0.07;
-            lookOffset.current.y += (targetLookY - lookOffset.current.y) * 0.07;
-
-            ctx.fillStyle = lightning ? (CHARACTERS[selectedChar].color + '0a') : '#010101';
+            ctx.fillStyle = lightningActive ? (CHARACTERS[selectedChar].color + '0a') : '#010101';
             ctx.fillRect(0, 0, w, h);
 
             const eyeSize = Math.min(w, h) * 0.28;
-            drawUltimateEye(centerX, centerY, eyeSize, lightning ? 0.35 : 0.22, blinkProgress, lookOffset.current);
+            drawUltimateEye(centerX, centerY, eyeSize, lightningActive ? 0.35 : 0.22, blinkProgress, lookOffset.current);
 
-            // PERSONALITY PARTICLES
+            // Particles physics
             particles.forEach(p => {
                 ctx.save();
                 ctx.translate(p.x, p.y);
@@ -299,31 +305,32 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                 ctx.globalAlpha = 0.3;
                 ctx.fillStyle = CHARACTERS[selectedChar].color;
 
-                if (trait === 'FEATHERS') { // Itachi: Feathers
+                if (trait === 'FEATHERS') {
                     ctx.beginPath(); ctx.ellipse(0, 0, p.s * 4, p.s, 0.4, 0, Math.PI * 2); ctx.fill();
-                } else if (trait === 'GRAVITY') { // Pain: Gravity Distortion
+                } else if (trait === 'GRAVITY') {
                     ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.5;
                     ctx.beginPath(); ctx.arc(0, 0, p.s * 5, 0, Math.PI * 2); ctx.stroke();
-                } else if (trait === 'KAMUI') { // Obito: Space Shards
+                } else if (trait === 'KAMUI') {
                     ctx.beginPath(); ctx.moveTo(-p.s, -p.s); ctx.lineTo(p.s, 0); ctx.lineTo(0, p.s * 2); ctx.fill();
-                } else if (trait === 'CHIDORI') { // Sasuke: Sparks
+                } else if (trait === 'CHIDORI') {
                     ctx.fillStyle = '#a0c4ff'; ctx.fillRect(0, 0, p.s, p.s * 6);
-                } else if (trait === 'EMBERS') { // Madara: Ash
+                } else if (trait === 'EMBERS') {
                     ctx.beginPath(); ctx.arc(0, 0, p.s, 0, Math.PI * 2); ctx.fill();
                 }
                 ctx.restore();
 
-                p.y -= p.v; p.a += p.rot;
+                p.y -= p.v * deltaTime;
+                p.a += p.rot * deltaTime;
                 if (p.y < -20) { p.y = h + 20; p.x = Math.random() * w; }
             });
 
-            // Heavy Rain
+            // Rain physics
             rain.forEach(r => {
-                ctx.strokeStyle = lightning ? '#fff' : r.c;
+                ctx.strokeStyle = lightningActive ? '#fff' : r.c;
                 ctx.globalAlpha = r.o;
                 ctx.lineWidth = 1;
                 ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x - 3, r.y + r.l); ctx.stroke();
-                r.y += r.v; r.x -= 2;
+                r.y += r.v * deltaTime; r.x -= (r.v * 0.1) * deltaTime;
                 if (r.y > h) { r.y = -50; r.x = Math.random() * w; }
             });
 
@@ -331,8 +338,11 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
         };
 
         requestRef.current = requestAnimationFrame(animate);
-        return () => cancelAnimationFrame(requestRef.current!);
-    }, [isIntro, lightning, selectedChar]);
+        return () => {
+            cancelAnimationFrame(requestRef.current!);
+            window.removeEventListener('resize', handleResize);
+        };
+    }, [isIntro, selectedChar]);
 
     if (isIntro) {
         return (
