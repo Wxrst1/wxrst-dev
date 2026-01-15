@@ -40,6 +40,7 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
     const [ripple, setRipple] = useState<{ x: number, y: number, active: boolean }>({ x: 0, y: 0, active: false });
     const [selectedChar, setSelectedChar] = useState<AkatsukiCharacter>('ITACHI');
     const [sasukeEyeMode, setSasukeEyeMode] = useState<'SHARINGAN' | 'RINNEGAN'>('RINNEGAN');
+    const visionFlashRef = useRef(0);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const cursorRef = useRef<HTMLDivElement>(null);
@@ -62,6 +63,7 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key.toLowerCase() === 'v') {
                 setSasukeEyeMode(prev => prev === 'SHARINGAN' ? 'RINNEGAN' : 'SHARINGAN');
+                visionFlashRef.current = 1.0;
             }
         };
 
@@ -303,6 +305,29 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                 ctx.globalAlpha = 0.12;
                 ctx.beginPath(); ctx.ellipse(-size * 0.4, -size * 0.4, size * 0.15, size * 0.25, -Math.PI / 4, 0, Math.PI * 2); ctx.fill();
 
+                // 4. VISION TRANSITION IMPACT (Awakening FX)
+                if (visionFlashRef.current > 0.01) {
+                    const flash = visionFlashRef.current;
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'screen';
+
+                    // Core Flare
+                    ctx.globalAlpha = flash * 0.8;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, size * (1.2 - flash * 0.4), 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Outer Colored Glow
+                    ctx.globalAlpha = flash * 0.4;
+                    ctx.fillStyle = CHARACTERS[selectedChar].color;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, size * 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.restore();
+                }
+
                 ctx.restore(); // Irir pivot
                 ctx.restore(); // Clipping
             }
@@ -320,6 +345,11 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
         const animate = (currentTime: number) => {
             const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.05); // Cap delta to prevent jumps
             lastTime = currentTime;
+
+            // Vision Flash Decay (Impact FX)
+            if (visionFlashRef.current > 0) {
+                visionFlashRef.current = Math.max(0, visionFlashRef.current - deltaTime * 4.5);
+            }
 
             const w = window.innerWidth;
             const h = window.innerHeight;
