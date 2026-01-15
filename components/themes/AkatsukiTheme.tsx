@@ -40,6 +40,7 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
     const [ripple, setRipple] = useState<{ x: number, y: number, active: boolean }>({ x: 0, y: 0, active: false });
     const [selectedChar, setSelectedChar] = useState<AkatsukiCharacter>('ITACHI');
     const [sasukeEyeMode, setSasukeEyeMode] = useState<'SHARINGAN' | 'RINNEGAN'>('RINNEGAN');
+    const sasukeModeRef = useRef<'SHARINGAN' | 'RINNEGAN'>('RINNEGAN');
     const visionFlashRef = useRef(0);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -62,7 +63,9 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
 
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key.toLowerCase() === 'v') {
-                setSasukeEyeMode(prev => prev === 'SHARINGAN' ? 'RINNEGAN' : 'SHARINGAN');
+                const nextMode = sasukeModeRef.current === 'SHARINGAN' ? 'RINNEGAN' : 'SHARINGAN';
+                sasukeModeRef.current = nextMode;
+                setSasukeEyeMode(nextMode);
                 visionFlashRef.current = 1.0;
             }
         };
@@ -254,7 +257,7 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
 
                 const isPain = selectedChar === 'PAIN';
                 const isSasuke = selectedChar === 'SASUKE';
-                const showSasukeRinnegan = isSasuke && sasukeEyeMode === 'RINNEGAN';
+                const showSasukeRinnegan = isSasuke && sasukeModeRef.current === 'RINNEGAN';
 
                 if (isPain || showSasukeRinnegan) {
                     const painGrad = ctx.createRadialGradient(0, 0, size * 0.5, 0, 0, eyeW);
