@@ -8,6 +8,7 @@ import QuickReactions from './components/QuickReactions';
 import Guestbook from './components/Guestbook';
 import AdminDashboard from './components/AdminDashboard';
 import SecurityGateway from './components/SecurityGateway';
+import SEOHead from './components/SEOHead';
 
 import ChristmasTheme from './components/themes/ChristmasTheme';
 import HalloweenTheme from './components/themes/HalloweenTheme';
@@ -131,6 +132,25 @@ const App: React.FC = () => {
         const platKey = `platform:${platform}`;
         const { data: platData } = await supabase.from('analytics').select('count').eq('key', platKey).maybeSingle();
         await supabase.from('analytics').upsert({ key: platKey, count: (platData?.count || 0) + 1 }, { onConflict: 'key' });
+
+        // 4. Track Resolution (Bucketized)
+        const w = window.innerWidth;
+        let res = 'Desktop';
+        if (w < 768) res = 'Mobile';
+        else if (w < 1024) res = 'Tablet';
+        const resKey = `resolution:${res}`;
+        const { data: resData } = await supabase.from('analytics').select('count').eq('key', resKey).maybeSingle();
+        await supabase.from('analytics').upsert({ key: resKey, count: (resData?.count || 0) + 1 }, { onConflict: 'key' });
+
+        // 5. Track Browser
+        let browser = 'Other';
+        if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) browser = 'Chrome';
+        else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) browser = 'Safari';
+        else if (userAgent.includes('Firefox')) browser = 'Firefox';
+        else if (userAgent.includes('Edg')) browser = 'Edge';
+        const browserKey = `browser:${browser}`;
+        const { data: browserData } = await supabase.from('analytics').select('count').eq('key', browserKey).maybeSingle();
+        await supabase.from('analytics').upsert({ key: browserKey, count: (browserData?.count || 0) + 1 }, { onConflict: 'key' });
       }
     } catch (e) {
       console.warn('Analytics tracking failed', e);
@@ -400,7 +420,8 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full min-h-screen overflow-hidden bg-black transition-colors duration-1000">
+    <div id="neural-matrix-root" className="relative w-full min-h-screen overflow-hidden bg-black transition-colors duration-1000">
+      <SEOHead profile={profile} currentTheme={theme} />
 
       {/* Interactive Global Elements */}
       {theme !== ThemeType.YIN_YANG && theme !== ThemeType.AKATSUKI && (

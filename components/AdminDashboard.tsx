@@ -21,6 +21,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profil
     // SEO Data State
     const [referrers, setReferrers] = useState<Array<{ src: string; count: number; pc: string }>>([]);
     const [platforms, setPlatforms] = useState<string[]>([]);
+    const [browsers, setBrowsers] = useState<Array<{ name: string; count: number; pc: string }>>([]);
+    const [resolutions, setResolutions] = useState<Array<{ type: string; count: number; pc: string }>>([]);
 
     // Live Traffic State
     const [trafficHistory, setTrafficHistory] = useState<Array<{ in: number; out: number }>>(() => {
@@ -144,6 +146,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profil
                 .sort((a, b) => b.count - a.count)
                 .map(r => `${r.key.replace('platform:', '')} (${r.count})`);
             setPlatforms(processedPlatforms.length ? processedPlatforms : ['No Data Yet']);
+
+            // Browsers
+            const rawBrowsers = allAnalytics.filter(r => r.key.startsWith('browser:'));
+            const totalBrowsers = rawBrowsers.reduce((acc, curr) => acc + curr.count, 0) || 1;
+            const processedBrowsers = rawBrowsers
+                .sort((a, b) => b.count - a.count)
+                .map(r => ({
+                    name: r.key.replace('browser:', ''),
+                    count: r.count,
+                    pc: Math.round((r.count / totalBrowsers) * 100) + '%'
+                }));
+            setBrowsers(processedBrowsers);
+
+            // Resolutions
+            const rawResolutions = allAnalytics.filter(r => r.key.startsWith('resolution:'));
+            const totalRes = rawResolutions.reduce((acc, curr) => acc + curr.count, 0) || 1;
+            const processedRes = rawResolutions
+                .sort((a, b) => b.count - a.count)
+                .map(r => ({
+                    type: r.key.replace('resolution:', ''),
+                    count: r.count,
+                    pc: Math.round((r.count / totalRes) * 100) + '%'
+                }));
+            setResolutions(processedRes);
         }
     };
 
@@ -175,6 +201,8 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
 [TRAFFIC INTELLIGENCE]
 - Top Source: ${referrers[0]?.src || 'N/A'}
 - Primary Platform: ${platforms[0] || 'N/A'}
+- Browser Distribution: ${browsers.map(b => `${b.name}:${b.pc}`).join(', ')}
+- Resolution Distribution: ${resolutions.map(r => `${r.type}:${r.pc}`).join(', ')}
 
 [END OF TRANSMISSION]
         `.trim();
@@ -494,12 +522,38 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
                                     </div>
 
                                     <div className="bg-black border border-white/5 p-6 space-y-4">
-                                        <h4 className="text-[10px] text-white/40 uppercase font-black tracking-widest">Client_Platforms</h4>
-                                        <div className="flex flex-wrap gap-2">
+                                        <h4 className="text-[10px] text-white/40 uppercase font-black tracking-widest">Client_Platforms / Browsers</h4>
+                                        <div className="flex flex-wrap gap-2 mb-4">
                                             {platforms.map((tag, i) => (
                                                 <span key={i} className="px-2 py-1 bg-white/5 border border-white/10 text-[10px] text-white/70 font-mono hover:bg-white/10 hover:text-white transition-all cursor-crosshair">
                                                     {tag}
                                                 </span>
+                                            ))}
+                                        </div>
+                                        <div className="space-y-2 border-t border-white/5 pt-4">
+                                            {browsers.map((b, i) => (
+                                                <div key={i} className="flex items-center justify-between text-[8px] font-mono">
+                                                    <span className="text-white/40">{b.name}</span>
+                                                    <div className="flex-1 mx-4 h-[1px] bg-white/10" />
+                                                    <span className="text-cyan-500">{b.pc}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-black border border-white/5 p-6 space-y-4">
+                                        <h4 className="text-[10px] text-white/40 uppercase font-black tracking-widest">Display_Resolutions</h4>
+                                        <div className="space-y-3">
+                                            {resolutions.map((r, i) => (
+                                                <div key={i} className="space-y-1">
+                                                    <div className="flex justify-between text-[8px] font-mono">
+                                                        <span className="text-white/60">{r.type}</span>
+                                                        <span className="text-white/40">{r.count} sessions</span>
+                                                    </div>
+                                                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-purple-500/50" style={{ width: r.pc }} />
+                                                    </div>
+                                                </div>
                                             ))}
                                         </div>
                                     </div>
