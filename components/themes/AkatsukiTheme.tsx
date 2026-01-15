@@ -36,12 +36,10 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
     const [visitorCount, setVisitorCount] = useState<number>(0);
     const [reactions, setReactions] = useState<Record<string, number>>({});
     const [userReacted, setUserReacted] = useState<string | null>(null);
-    const [lightning, setLightning] = useState(false);
     const [ripple, setRipple] = useState<{ x: number, y: number, active: boolean }>({ x: 0, y: 0, active: false });
     const [selectedChar, setSelectedChar] = useState<AkatsukiCharacter>('ITACHI');
     const [sasukeEyeMode, setSasukeEyeMode] = useState<'SHARINGAN' | 'RINNEGAN'>('RINNEGAN');
     const sasukeModeRef = useRef<'SHARINGAN' | 'RINNEGAN'>('RINNEGAN');
-    const visionFlashRef = useRef(0);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const cursorRef = useRef<HTMLDivElement>(null);
@@ -66,7 +64,6 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                 const nextMode = sasukeModeRef.current === 'SHARINGAN' ? 'RINNEGAN' : 'SHARINGAN';
                 sasukeModeRef.current = nextMode;
                 setSasukeEyeMode(nextMode);
-                visionFlashRef.current = 1.0;
             }
         };
 
@@ -168,18 +165,6 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             a: Math.random() * Math.PI * 2,
             rot: Math.random() * 1.5 + 0.5
         });
-
-        let lightningActive = false;
-        const lightningStrike = () => {
-            if (Math.random() < 0.003 && !lightningActive) {
-                lightningActive = true;
-                setLightning(true);
-                setTimeout(() => {
-                    lightningActive = false;
-                    setLightning(false);
-                }, 60);
-            }
-        };
 
         const rain: any[] = [];
         for (let i = 0; i < 120; i++) rain.push({
@@ -308,29 +293,6 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                 ctx.globalAlpha = 0.12;
                 ctx.beginPath(); ctx.ellipse(-size * 0.4, -size * 0.4, size * 0.15, size * 0.25, -Math.PI / 4, 0, Math.PI * 2); ctx.fill();
 
-                // 4. VISION TRANSITION IMPACT (Awakening FX)
-                if (visionFlashRef.current > 0.01) {
-                    const flash = visionFlashRef.current;
-                    ctx.save();
-                    ctx.globalCompositeOperation = 'screen';
-
-                    // Core Flare
-                    ctx.globalAlpha = flash * 0.8;
-                    ctx.fillStyle = '#ffffff';
-                    ctx.beginPath();
-                    ctx.arc(0, 0, size * (1.2 - flash * 0.4), 0, Math.PI * 2);
-                    ctx.fill();
-
-                    // Outer Colored Glow
-                    ctx.globalAlpha = flash * 0.4;
-                    ctx.fillStyle = CHARACTERS[selectedChar].color;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, size * 1.5, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    ctx.restore();
-                }
-
                 ctx.restore(); // Irir pivot
                 ctx.restore(); // Clipping
             }
@@ -349,15 +311,8 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.05); // Cap delta to prevent jumps
             lastTime = currentTime;
 
-            // Vision Flash Decay (Impact FX)
-            if (visionFlashRef.current > 0) {
-                visionFlashRef.current = Math.max(0, visionFlashRef.current - deltaTime * 4.5);
-            }
-
             const w = window.innerWidth;
             const h = window.innerHeight;
-
-            lightningStrike();
 
             // Blink Logic
             if (blinkPhase === 'IDLE' && Math.random() < 0.003) blinkPhase = 'CLOSING';
@@ -382,13 +337,14 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
 
             // 1. CLEAR FRAME
             ctx.globalAlpha = 1.0;
-            ctx.fillStyle = lightningActive ? (CHARACTERS[selectedChar].color + '15') : '#010101';
+            ctx.fillStyle = '#010101';
             ctx.fillRect(0, 0, w, h);
 
             // 2. RENDER RAIN (BATCHED BY COLOR)
-            const rainGroups: Record<string, any[]> = { '#ffffff': [], [CHARACTERS[selectedChar].color]: [] };
+            const rainColor = CHARACTERS[selectedChar].color;
+            const rainGroups: Record<string, any[]> = { '#ffffff': [], [rainColor]: [] };
             rain.forEach(r => {
-                const color = lightningActive ? '#ffffff' : r.c;
+                const color = r.c;
                 if (!rainGroups[color]) rainGroups[color] = [];
                 rainGroups[color].push(r);
 
@@ -439,7 +395,7 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
 
             // 4. RENDER EYE
             const eyeSize = Math.min(w, h) * 0.28;
-            drawUltimateEye(centerX, centerY, eyeSize, lightningActive ? 0.38 : 0.22, blinkProgress, lookOffset.current);
+            drawUltimateEye(centerX, centerY, eyeSize, 0.22, blinkProgress, lookOffset.current);
 
             // 5. UPDATE CURSOR (MUST BE LAST FOR ZERO GAP)
             if (cursorRef.current) {
