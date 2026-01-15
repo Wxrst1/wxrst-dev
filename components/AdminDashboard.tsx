@@ -264,7 +264,7 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
     };
 
     const handleAddLink = () => {
-        const newLink = { label: 'New Link', url: 'https://', category: 'GENERAL', status: 'ACTIVE' };
+        const newLink = { label: 'New Link', url: 'https://', category: 'GENERAL', status: 'ACTIVE', visit_count: 0 };
         setLinks([...links, newLink]);
     };
 
@@ -284,14 +284,16 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
                 title: l.label,
                 url: l.url,
                 category: l.category || 'GENERAL',
-                status: l.status || 'ACTIVE'
+                status: l.status || 'ACTIVE',
+                visit_count: l.visit_count || 0
             }));
 
             const toInsert = links.filter(l => !l.id).map(l => ({
                 title: l.label,
                 url: l.url,
                 category: l.category || 'GENERAL',
-                status: l.status || 'ACTIVE'
+                status: l.status || 'ACTIVE',
+                visit_count: 0
             }));
 
             console.log('Syncing links:', { toUpdate, toInsert });
@@ -566,11 +568,11 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
                                         <span className="text-cyan-500">SYSTEM_OPTIMIZED</span>
                                     </h4>
                                     <div className="space-y-3">
-                                        {links
-                                            .sort((a, b) => (Number((b as any).visit_count) || 0) - (Number((a as any).visit_count) || 0))
-                                            .slice(0, 5)
-                                            .map((link, i) => {
-                                                const maxClicks = Math.max(1, Number((links[0] as any).visit_count) || 0);
+                                        {(() => {
+                                            const sortedLinks = [...links].sort((a, b) => (Number((b as any).visit_count) || 0) - (Number((a as any).visit_count) || 0));
+                                            const maxClicks = Math.max(1, Number((sortedLinks[0] as any)?.visit_count) || 0);
+
+                                            return sortedLinks.slice(0, 5).map((link, i) => {
                                                 const clicks = Number((link as any).visit_count) || 0;
                                                 const percentage = (clicks / maxClicks) * 100;
 
@@ -588,7 +590,8 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
                                                         </div>
                                                     </div>
                                                 );
-                                            })}
+                                            });
+                                        })()}
                                         {links.length === 0 && <p className="text-white/20 text-xs font-mono">NO_ACTIVE_NODES_DETECTED</p>}
                                     </div>
                                 </div>

@@ -48,7 +48,7 @@ export interface UserProfile {
   title: string;
   bio: string;
   avatarUrl: string;
-  links: { id?: number; label: string; url: string; status?: string; category?: string }[];
+  links: { id?: number; label: string; url: string; status?: string; category?: string; visit_count?: number }[];
   socials?: {
     github?: string;
     twitter?: string;

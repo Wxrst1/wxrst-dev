@@ -29,6 +29,16 @@ const SEOHead: React.FC<SEOHeadProps> = ({ profile, currentTheme }) => {
 
         updateMeta('description', description);
         updateMeta('keywords', `developer, designer, portfolio, ${profile.name}, ${currentTheme}, radical morph`);
+        updateMeta('theme-color', currentTheme === ThemeType.AKATSUKI ? '#ff0055' : '#000000');
+
+        // Canonical
+        let canonical = document.querySelector('link[rel="canonical"]');
+        if (!canonical) {
+            canonical = document.createElement('link');
+            canonical.setAttribute('rel', 'canonical');
+            document.head.appendChild(canonical);
+        }
+        canonical.setAttribute('href', window.location.href);
 
         // Open Graph
         updateMeta('og:title', `${profile.name} - ${profile.title}`, true);

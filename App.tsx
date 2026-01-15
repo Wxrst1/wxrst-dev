@@ -159,12 +159,23 @@ const App: React.FC = () => {
 
   const handleLinkClick = async (linkId: string) => {
     try {
-      // Find the link to get current count
-      const link = profile.links.find(l => String(l.id) === String(linkId));
-      // In a real app we'd just use an RPC `increment_visit_count(id)`
-      const { data } = await supabase.from('links').select('visit_count').eq('id', linkId).single();
+      // 1. Optimistic Update (Instant Dashboard Feedback)
+      setProfile(prev => ({
+        ...prev,
+        links: prev.links.map(l =>
+          String(l.id) === String(linkId)
+            ? { ...l, visit_count: (l.visit_count || 0) + 1 }
+            : l
+        )
+      }));
+
+      // 2. Database Sync
+      const idNum = parseInt(linkId);
+      if (isNaN(idNum)) return;
+
+      const { data } = await supabase.from('links').select('visit_count').eq('id', idNum).single();
       const currentCount = data?.visit_count || 0;
-      await supabase.from('links').update({ visit_count: currentCount + 1 }).eq('id', linkId);
+      await supabase.from('links').update({ visit_count: currentCount + 1 }).eq('id', idNum);
     } catch (e) {
       console.warn('Click tracking failed', e);
     }
@@ -253,7 +264,8 @@ const App: React.FC = () => {
           label: l.title,
           url: l.url,
           status: l.status,
-          category: l.category
+          category: l.category,
+          visit_count: l.visit_count || 0
         }));
       }
 
