@@ -92,15 +92,22 @@ const App: React.FC = () => {
     try {
       const now = Date.now();
       const lastVisit = localStorage.getItem('last_visit_timestamp');
+      const sessionTracked = sessionStorage.getItem('session_meta_tracked');
       const cooldown = 24 * 60 * 60 * 1000; // 24 hours
 
-      const shouldRecord = !lastVisit || (now - parseInt(lastVisit)) > cooldown;
+      const shouldRecordVisit = !lastVisit || (now - parseInt(lastVisit)) > cooldown;
+      const shouldRecordMeta = !sessionTracked; // Always record meta once per session for accurate testing/data
 
-      if (shouldRecord) {
-        // 1. Total Visits
-        const { data } = await supabase.from('analytics').select('count').eq('key', 'total_visits').maybeSingle();
-        const currentCount = data?.count || 0;
-        await supabase.from('analytics').upsert({ key: 'total_visits', count: currentCount + 1 }, { onConflict: 'key' });
+      if (shouldRecordVisit || shouldRecordMeta) {
+        // 1. Total Visits (Only if cooldown expired)
+        if (shouldRecordVisit) {
+          const { data } = await supabase.from('analytics').select('count').eq('key', 'total_visits').maybeSingle();
+          const currentCount = data?.count || 0;
+          await supabase.from('analytics').upsert({ key: 'total_visits', count: currentCount + 1 }, { onConflict: 'key' });
+          localStorage.setItem('last_visit_timestamp', now.toString());
+        }
+
+        sessionStorage.setItem('session_meta_tracked', 'true');
 
         // Update local timestamp immediately to prevent race conditions
         localStorage.setItem('last_visit_timestamp', now.toString());

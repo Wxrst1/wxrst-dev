@@ -185,7 +185,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profil
 
     const handleExportReport = () => {
         const date = new Date().toLocaleDateString();
-        const topLink = links.sort((a, b) => (Number((b as any).visit_count) || 0) - (Number((a as any).visit_count) || 0))[0];
+        const topLink = [...links].sort((a, b) => (Number((b as any).visit_count) || 0) - (Number((a as any).visit_count) || 0))[0];
 
         const report = `
 RADICAL MORPH // INTELLIGENCE REPORT [${date}]
@@ -207,8 +207,12 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
 [END OF TRANSMISSION]
         `.trim();
 
-        // Encode and open mail client
+        // 1. Mail Fallback
         window.location.href = `mailto:?subject=Daily Site Report - ${date}&body=${encodeURIComponent(report)}`;
+
+        // 2. Clipboard Backup
+        navigator.clipboard.writeText(report);
+        alert('REPORT ENCRYPTED AND COPIED TO CLIPBOARD.\n\nOpening mail client fallback...');
     };
 
     const handleResetStats = async () => {
@@ -520,6 +524,7 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
                                                     <div className="w-12 text-right text-white font-bold">{item.count}</div>
                                                 </div>
                                             ))}
+                                            {referrers.length === 0 && <p className="text-[10px] text-white/20 font-mono italic px-2">No_Incoming_Signals_Detected</p>}
                                         </div>
                                     </div>
 
@@ -557,6 +562,7 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
                                                     </div>
                                                 </div>
                                             ))}
+                                            {resolutions.length === 0 && <p className="text-[10px] text-white/20 font-mono italic">Searching_Display_Spectrum...</p>}
                                         </div>
                                     </div>
                                 </div>
