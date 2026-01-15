@@ -39,6 +39,7 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
     const [lightning, setLightning] = useState(false);
     const [ripple, setRipple] = useState<{ x: number, y: number, active: boolean }>({ x: 0, y: 0, active: false });
     const [selectedChar, setSelectedChar] = useState<AkatsukiCharacter>('ITACHI');
+    const [sasukeEyeMode, setSasukeEyeMode] = useState<'SHARINGAN' | 'RINNEGAN'>('RINNEGAN');
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const cursorRef = useRef<HTMLDivElement>(null);
@@ -49,16 +50,27 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
     const requestRef = useRef<number>();
     const activeEmojis = ['🌑', '👁️', '☁️', '📜', '💍', '叛'];
 
+    // --- INPUT ENGINE (Movement & Toggles) ---
     useEffect(() => {
         const handleMove = (e: MouseEvent) => {
             mouseRef.current = { x: e.clientX, y: e.clientY };
             if (cursorRef.current) {
-                // Direct DOM update for zero-latency cursor
                 cursorRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`;
             }
         };
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key.toLowerCase() === 'v') {
+                setSasukeEyeMode(prev => prev === 'SHARINGAN' ? 'RINNEGAN' : 'SHARINGAN');
+            }
+        };
+
         window.addEventListener('mousemove', handleMove, { passive: true });
-        return () => window.removeEventListener('mousemove', handleMove);
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('keydown', handleKeyDown);
+        };
     }, []);
 
     // --- ASSET LOADING (Robust) ---
@@ -240,8 +252,9 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
 
                 const isPain = selectedChar === 'PAIN';
                 const isSasuke = selectedChar === 'SASUKE';
+                const showSasukeRinnegan = isSasuke && sasukeEyeMode === 'RINNEGAN';
 
-                if (isPain || isSasuke) {
+                if (isPain || showSasukeRinnegan) {
                     const painGrad = ctx.createRadialGradient(0, 0, size * 0.5, 0, 0, eyeW);
                     painGrad.addColorStop(0, '#c7b3e0');
                     painGrad.addColorStop(1, '#a68fc7');
@@ -262,7 +275,7 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
 
                 if (isPain) {
                     drawProceduralRinnegan(size, eyeW * 1.5, false);
-                } else if (isSasuke) {
+                } else if (showSasukeRinnegan) {
                     drawProceduralRinnegan(size, eyeW * 1.5, true);
                 } else if (img && img.complete) {
                     const offX = (CHARACTERS[selectedChar].offset?.x || 0) * size;
@@ -524,7 +537,12 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
 
             {/* CINEMATIC BARS */}
             <div className="fixed top-0 left-0 w-full h-12 bg-black z-50 border-b flex items-center px-12 justify-between" style={{ borderColor: `${currentChar.color}20` }}>
-                <span className="text-[9px] font-mono tracking-[0.8em] uppercase italic" style={{ color: currentChar.color }}>{currentChar.name} vision_active</span>
+                <div className="flex items-center gap-4">
+                    <span className="text-[9px] font-mono tracking-[0.8em] uppercase italic" style={{ color: currentChar.color }}>
+                        {selectedChar === 'SASUKE' ? `${sasukeEyeMode}_VISION_ACTIVE` : `${currentChar.name} vision_active`}
+                    </span>
+                    {selectedChar === 'SASUKE' && <span className="text-[8px] font-mono text-white/30 tracking-[0.2em] animate-pulse">[PRESS 'V' TO TOGGLE VISION]</span>}
+                </div>
                 <span className="text-[9px] font-mono tracking-[0.8em] opacity-50 uppercase">Agency: {profile.name}</span>
             </div>
 
@@ -542,7 +560,7 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                     {[
                         { label: 'Souls_Caught', val: visitorCount.toLocaleString() },
                         { label: 'Bloodline', val: currentChar.bloodline },
-                        { label: 'Eye_Status', val: selectedChar },
+                        { label: 'Eye_Status', val: selectedChar === 'SASUKE' ? (sasukeEyeMode === 'RINNEGAN' ? 'SIX_PATHS' : 'SHARINGAN') : selectedChar },
                         { label: 'Power_Level', val: currentChar.rank }
                     ].map(s => (
                         <div key={s.label}>
