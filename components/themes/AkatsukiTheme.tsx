@@ -174,15 +174,47 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             c: i % 12 === 0 ? CHARACTERS[selectedChar].color : '#ffffff'
         });
 
+        const drawTomoe = (x: number, y: number, radius: number, rotation: number) => {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fill();
+            // Tail
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.bezierCurveTo(radius, radius * 1.5, -radius * 0.5, radius * 2, -radius * 1.2, radius);
+            ctx.bezierCurveTo(-radius * 0.8, radius * 0.5, 0, radius * 0.8, 0, 0);
+            ctx.fill();
+            ctx.restore();
+        };
+
         const drawProceduralRinnegan = (baseSize: number, maxRadius: number) => {
             ctx.strokeStyle = '#000000';
             const ringCount = Math.ceil(maxRadius / (baseSize / 3));
+
             for (let i = 1; i <= ringCount; i++) {
-                ctx.lineWidth = baseSize * 0.035;
+                const ringRadius = (baseSize / 3) * i;
+                ctx.lineWidth = baseSize * 0.04;
                 ctx.globalAlpha = Math.max(0.1, 1 - (i * 0.08));
                 ctx.beginPath();
-                ctx.arc(0, 0, (baseSize / 3) * i, 0, Math.PI * 2);
+                ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
                 ctx.stroke();
+
+                // Add Six Paths Tomoe (6 total: 3 on ring 1, 3 on ring 2)
+                if (i <= 2) {
+                    const tomoeCount = 3;
+                    const offset = (i - 1) * (Math.PI / 3); // Alternate rotation between rings
+                    for (let t = 0; t < tomoeCount; t++) {
+                        const angle = (t * (Math.PI * 2) / tomoeCount) + offset;
+                        const tx = Math.cos(angle) * ringRadius;
+                        const ty = Math.sin(angle) * ringRadius;
+                        ctx.globalAlpha = 0.9;
+                        drawTomoe(tx, ty, baseSize * 0.06, angle + Math.PI / 2);
+                    }
+                }
             }
             ctx.globalAlpha = 1;
             ctx.fillStyle = '#100c14';
