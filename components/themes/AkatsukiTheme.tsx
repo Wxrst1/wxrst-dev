@@ -174,18 +174,19 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             c: i % 12 === 0 ? CHARACTERS[selectedChar].color : '#ffffff'
         });
 
-        const drawProceduralRinnegan = (size: number) => {
+        const drawProceduralRinnegan = (baseSize: number, maxRadius: number) => {
             ctx.strokeStyle = '#000000';
-            for (let i = 1; i <= 6; i++) {
-                ctx.lineWidth = size * 0.03 * (1 + (i / 6));
-                ctx.globalAlpha = 1 - (i * 0.12);
+            const ringCount = Math.ceil(maxRadius / (baseSize / 3));
+            for (let i = 1; i <= ringCount; i++) {
+                ctx.lineWidth = baseSize * 0.035;
+                ctx.globalAlpha = Math.max(0.1, 1 - (i * 0.08));
                 ctx.beginPath();
-                ctx.arc(0, 0, size * (i / 6), 0, Math.PI * 2);
+                ctx.arc(0, 0, (baseSize / 3) * i, 0, Math.PI * 2);
                 ctx.stroke();
             }
             ctx.globalAlpha = 1;
             ctx.fillStyle = '#100c14';
-            ctx.beginPath(); ctx.arc(0, 0, size * 0.1, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 0, baseSize * 0.12, 0, Math.PI * 2); ctx.fill();
         };
 
         const drawUltimateEye = (x: number, y: number, size: number, opacity: number, blink: number, look: { x: number, y: number }) => {
@@ -207,24 +208,28 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                 ctx.quadraticCurveTo(0, currentH, -eyeW, 0);
                 ctx.clip();
 
-                // Sclera
-                const scleraGrad = ctx.createRadialGradient(0, 0, size * 0.5, 0, 0, eyeW);
-                scleraGrad.addColorStop(0, '#0a0808');
-                scleraGrad.addColorStop(1, '#020101');
-                ctx.fillStyle = scleraGrad;
-                ctx.fillRect(-eyeW, -eyeH, eyeW * 2, eyeH * 2);
+                const isPain = selectedChar === 'PAIN';
 
-                // Iris Look Pivot
+                // 2. Base Eye Color (Sclera or Full Rinnegan)
+                if (isPain) {
+                    ctx.fillStyle = CHARACTERS.PAIN.color;
+                    ctx.fillRect(-eyeW, -eyeH, eyeW * 2, eyeH * 2);
+                } else {
+                    const scleraGrad = ctx.createRadialGradient(0, 0, size * 0.5, 0, 0, eyeW);
+                    scleraGrad.addColorStop(0, '#0a0808');
+                    scleraGrad.addColorStop(1, '#020101');
+                    ctx.fillStyle = scleraGrad;
+                    ctx.fillRect(-eyeW, -eyeH, eyeW * 2, eyeH * 2);
+                }
+
+                // 3. Iris Look Pivot
                 ctx.save();
                 ctx.translate(look.x * (eyeW * 0.32), look.y * (eyeH * 0.28));
 
-                const isPain = selectedChar === 'PAIN';
                 const img = eyeImages.current[selectedChar];
 
                 if (isPain) {
-                    ctx.fillStyle = CHARACTERS.PAIN.color;
-                    ctx.beginPath(); ctx.arc(0, 0, size, 0, Math.PI * 2); ctx.fill();
-                    drawProceduralRinnegan(size);
+                    drawProceduralRinnegan(size, eyeW * 1.5);
                 } else if (img && img.complete) {
                     const offX = (CHARACTERS[selectedChar].offset?.x || 0) * size;
                     const offY = (CHARACTERS[selectedChar].offset?.y || 0) * size;
