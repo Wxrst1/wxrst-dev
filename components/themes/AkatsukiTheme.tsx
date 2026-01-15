@@ -191,7 +191,7 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             ctx.restore();
         };
 
-        const drawProceduralRinnegan = (baseSize: number, maxRadius: number) => {
+        const drawProceduralRinnegan = (baseSize: number, maxRadius: number, showTomoe: boolean) => {
             ctx.strokeStyle = '#000000';
             const spacing = baseSize * 0.35;
             const ringCount = Math.ceil(maxRadius / spacing);
@@ -204,11 +204,10 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                 ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
                 ctx.stroke();
 
-                // Canonical Six Paths (3 on ring 1, 3 on ring 2, RADIALLY ALIGNED)
-                if (i === 1 || i === 2) {
+                if (showTomoe && (i === 1 || i === 2)) {
                     const tomoeCount = 3;
                     for (let t = 0; t < tomoeCount; t++) {
-                        const angle = (t * (Math.PI * 2) / tomoeCount) - (Math.PI / 2); // Start from top
+                        const angle = (t * (Math.PI * 2) / tomoeCount) - (Math.PI / 2);
                         const tx = Math.cos(angle) * ringRadius;
                         const ty = Math.sin(angle) * ringRadius;
                         ctx.globalAlpha = 0.95;
@@ -231,7 +230,6 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             const smoothedBlink = Math.sin(blink * Math.PI / 2);
             const currentH = eyeH * smoothedBlink;
 
-            // 1. Clipping (Only if not closed)
             if (blink > 0.05) {
                 ctx.save();
                 ctx.beginPath();
@@ -241,9 +239,9 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                 ctx.clip();
 
                 const isPain = selectedChar === 'PAIN';
+                const isSasuke = selectedChar === 'SASUKE';
 
-                // 2. Base Eye Color (Sclera or Full Rinnegan)
-                if (isPain) {
+                if (isPain || isSasuke) {
                     const painGrad = ctx.createRadialGradient(0, 0, size * 0.5, 0, 0, eyeW);
                     painGrad.addColorStop(0, '#c7b3e0');
                     painGrad.addColorStop(1, '#a68fc7');
@@ -257,14 +255,15 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                     ctx.fillRect(-eyeW, -eyeH, eyeW * 2, eyeH * 2);
                 }
 
-                // 3. Iris Look Pivot
                 ctx.save();
                 ctx.translate(look.x * (eyeW * 0.32), look.y * (eyeH * 0.28));
 
                 const img = eyeImages.current[selectedChar];
 
                 if (isPain) {
-                    drawProceduralRinnegan(size, eyeW * 1.5);
+                    drawProceduralRinnegan(size, eyeW * 1.5, false);
+                } else if (isSasuke) {
+                    drawProceduralRinnegan(size, eyeW * 1.5, true);
                 } else if (img && img.complete) {
                     const offX = (CHARACTERS[selectedChar].offset?.x || 0) * size;
                     const offY = (CHARACTERS[selectedChar].offset?.y || 0) * size;
