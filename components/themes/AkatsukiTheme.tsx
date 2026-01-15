@@ -185,40 +185,40 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
             // Tail
             ctx.beginPath();
             ctx.moveTo(radius, 0);
-            ctx.bezierCurveTo(radius, radius * 1.5, -radius * 0.5, radius * 2, -radius * 1.2, radius);
-            ctx.bezierCurveTo(-radius * 0.8, radius * 0.5, 0, radius * 0.8, 0, 0);
+            ctx.bezierCurveTo(radius, radius * 1.2, -radius * 0.4, radius * 1.8, -radius * 1.1, radius);
+            ctx.bezierCurveTo(-radius * 0.8, radius * 0.5, 0, radius * 0.7, 0, 0);
             ctx.fill();
             ctx.restore();
         };
 
         const drawProceduralRinnegan = (baseSize: number, maxRadius: number) => {
             ctx.strokeStyle = '#000000';
-            const ringCount = Math.ceil(maxRadius / (baseSize / 3));
+            const spacing = baseSize * 0.35;
+            const ringCount = Math.ceil(maxRadius / spacing);
 
             for (let i = 1; i <= ringCount; i++) {
-                const ringRadius = (baseSize / 3) * i;
-                ctx.lineWidth = baseSize * 0.04;
+                const ringRadius = spacing * i;
+                ctx.lineWidth = baseSize * 0.045;
                 ctx.globalAlpha = Math.max(0.1, 1 - (i * 0.08));
                 ctx.beginPath();
                 ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
                 ctx.stroke();
 
-                // Add Six Paths Tomoe (6 total: 3 on ring 1, 3 on ring 2)
-                if (i <= 2) {
+                // Canonical Six Paths (3 on ring 1, 3 on ring 2, RADIALLY ALIGNED)
+                if (i === 1 || i === 2) {
                     const tomoeCount = 3;
-                    const offset = (i - 1) * (Math.PI / 3); // Alternate rotation between rings
                     for (let t = 0; t < tomoeCount; t++) {
-                        const angle = (t * (Math.PI * 2) / tomoeCount) + offset;
+                        const angle = (t * (Math.PI * 2) / tomoeCount) - (Math.PI / 2); // Start from top
                         const tx = Math.cos(angle) * ringRadius;
                         const ty = Math.sin(angle) * ringRadius;
-                        ctx.globalAlpha = 0.9;
-                        drawTomoe(tx, ty, baseSize * 0.06, angle + Math.PI / 2);
+                        ctx.globalAlpha = 0.95;
+                        drawTomoe(tx, ty, baseSize * 0.065, angle + Math.PI / 1.8);
                     }
                 }
             }
             ctx.globalAlpha = 1;
             ctx.fillStyle = '#100c14';
-            ctx.beginPath(); ctx.arc(0, 0, baseSize * 0.12, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 0, baseSize * 0.15, 0, Math.PI * 2); ctx.fill();
         };
 
         const drawUltimateEye = (x: number, y: number, size: number, opacity: number, blink: number, look: { x: number, y: number }) => {
@@ -244,7 +244,10 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
 
                 // 2. Base Eye Color (Sclera or Full Rinnegan)
                 if (isPain) {
-                    ctx.fillStyle = CHARACTERS.PAIN.color;
+                    const painGrad = ctx.createRadialGradient(0, 0, size * 0.5, 0, 0, eyeW);
+                    painGrad.addColorStop(0, '#c7b3e0');
+                    painGrad.addColorStop(1, '#a68fc7');
+                    ctx.fillStyle = painGrad;
                     ctx.fillRect(-eyeW, -eyeH, eyeW * 2, eyeH * 2);
                 } else {
                     const scleraGrad = ctx.createRadialGradient(0, 0, size * 0.5, 0, 0, eyeW);
