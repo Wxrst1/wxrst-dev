@@ -5,33 +5,26 @@ import { ThemeType } from '../types';
 
 const VisitorCounter: React.FC<{ theme?: ThemeType }> = ({ theme }) => {
     const [count, setCount] = useState<number | null>(null);
+    const incrementLock = React.useRef(false);
 
     useEffect(() => {
-        const incrementAndFetch = async () => {
-            // 1. Increment visit count (Simple RPC or upsert)
-            // Since we don't have an RPC yet, we'll try to fetch and increment
-            // In production, an RPC is much better to avoid race conditions.
-
-            const { data, error } = await supabase
+        const fetchCount = async () => {
+            const { data } = await supabase
                 .from('analytics')
                 .select('count')
                 .eq('key', 'total_visits')
                 .single();
 
-            let currentCount = 0;
             if (data) {
-                currentCount = data.count;
+                setCount(data.count);
             }
-
-            const newCount = currentCount + 1;
-            setCount(newCount);
-
-            await supabase
-                .from('analytics')
-                .upsert({ key: 'total_visits', count: newCount }, { onConflict: 'key' });
         };
 
-        incrementAndFetch();
+        fetchCount();
+
+        // Optional: Refresh count periodically or just on mount
+        const interval = setInterval(fetchCount, 30000); // 30s
+        return () => clearInterval(interval);
     }, []);
 
     if (count === null) return null;

@@ -32,7 +32,6 @@ const CHARACTERS: Record<AkatsukiCharacter, {
 };
 
 const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClick }) => {
-    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [isIntro, setIsIntro] = useState(true);
     const [visitorCount, setVisitorCount] = useState<number>(0);
     const [reactions, setReactions] = useState<Record<string, number>>({});
@@ -42,6 +41,7 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
     const [selectedChar, setSelectedChar] = useState<AkatsukiCharacter>('ITACHI');
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const cursorRef = useRef<HTMLDivElement>(null);
     const eyeImages = useRef<Record<string, HTMLImageElement>>({});
     const [imagesReady, setImagesReady] = useState(false);
     const mouseRef = useRef({ x: 0, y: 0 });
@@ -52,8 +52,12 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
     useEffect(() => {
         const handleMove = (e: MouseEvent) => {
             mouseRef.current = { x: e.clientX, y: e.clientY };
+            if (cursorRef.current) {
+                // Direct DOM update for zero-latency cursor
+                cursorRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`;
+            }
         };
-        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mousemove', handleMove, { passive: true });
         return () => window.removeEventListener('mousemove', handleMove);
     }, []);
 
@@ -113,69 +117,74 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
         }
     };
 
-    // --- CANVAS ENGINE (60FPS DEEP SMOOTHING) ---
+    // --- CANVAS ENGINE (ULTRA-FLUID 144Hz+ ARCHITECTURE) ---
     useEffect(() => {
         if (!canvasRef.current || isIntro) return;
         const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: false }); // Performance optimization
         if (!ctx) return;
 
-        // Sync canvas size once and on resize
+        // High-DPI Scaling Logic
         const handleResize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            canvas.style.width = `${window.innerWidth}px`;
+            canvas.style.height = `${window.innerHeight}px`;
+            ctx.scale(dpr, dpr);
         };
         handleResize();
-        window.addEventListener('resize', handleResize);
+        window.addEventListener('resize', handleResize, { passive: true });
 
         let lastTime = performance.now();
         let blinkProgress = 1;
         let blinkPhase: 'IDLE' | 'CLOSING' | 'OPENING' = 'IDLE';
 
+        // Pre-generate physics objects
         const particles: any[] = [];
         const trait = CHARACTERS[selectedChar].trait;
         for (let i = 0; i < 60; i++) particles.push({
             x: Math.random() * window.innerWidth,
             y: Math.random() * window.innerHeight,
             s: Math.random() * 2 + 1,
-            v: Math.random() * 100 + 50, // Pixels per second
+            v: Math.random() * 80 + 40,
             a: Math.random() * Math.PI * 2,
-            rot: Math.random() * 2 + 1 // Radians per second
+            rot: Math.random() * 1.5 + 0.5
         });
 
         let lightningActive = false;
         const lightningStrike = () => {
-            if (Math.random() < 0.005 && !lightningActive) {
+            if (Math.random() < 0.003 && !lightningActive) {
                 lightningActive = true;
-                setLightning(true); // Still update state for other UI components
+                setLightning(true);
                 setTimeout(() => {
                     lightningActive = false;
                     setLightning(false);
-                }, 80);
+                }, 60);
             }
         };
 
         const rain: any[] = [];
-        for (let i = 0; i < 150; i++) rain.push({
+        for (let i = 0; i < 120; i++) rain.push({
             x: Math.random() * window.innerWidth,
             y: Math.random() * window.innerHeight,
-            l: Math.random() * 25 + 15,
-            v: Math.random() * 600 + 400, // Pixels per second
-            o: Math.random() * 0.2 + 0.1,
-            c: i % 15 === 0 ? CHARACTERS[selectedChar].color : '#ffffff'
+            l: Math.random() * 20 + 20,
+            v: Math.random() * 700 + 400,
+            o: Math.random() * 0.15 + 0.05,
+            c: i % 12 === 0 ? CHARACTERS[selectedChar].color : '#ffffff'
         });
 
         const drawProceduralRinnegan = (size: number) => {
             ctx.strokeStyle = '#000000';
             for (let i = 1; i <= 6; i++) {
                 ctx.lineWidth = size * 0.03 * (1 + (i / 6));
-                ctx.globalAlpha = 1 - (i * 0.1);
+                ctx.globalAlpha = 1 - (i * 0.12);
                 ctx.beginPath();
                 ctx.arc(0, 0, size * (i / 6), 0, Math.PI * 2);
                 ctx.stroke();
             }
             ctx.globalAlpha = 1;
-            ctx.fillStyle = '#000000';
+            ctx.fillStyle = '#100c14';
             ctx.beginPath(); ctx.arc(0, 0, size * 0.1, 0, Math.PI * 2); ctx.fill();
         };
 
@@ -186,72 +195,67 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
 
             const eyeW = size * 2.8;
             const eyeH = size * 1.4;
-
             const smoothedBlink = Math.sin(blink * Math.PI / 2);
             const currentH = eyeH * smoothedBlink;
 
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(-eyeW, 0);
-            ctx.quadraticCurveTo(0, -currentH, eyeW, 0);
-            ctx.quadraticCurveTo(0, currentH, -eyeW, 0);
-            ctx.clip();
-
-            const scleraGrad = ctx.createRadialGradient(0, 0, size * 0.5, 0, 0, eyeW);
-            scleraGrad.addColorStop(0, '#0f0a0a');
-            scleraGrad.addColorStop(1, '#050303');
-            ctx.fillStyle = scleraGrad;
-            ctx.beginPath();
-            ctx.moveTo(-eyeW, 0);
-            ctx.quadraticCurveTo(0, -eyeH, eyeW, 0);
-            ctx.quadraticCurveTo(0, eyeH, -eyeW, 0);
-            ctx.fill();
-
-            ctx.save();
-            ctx.translate(look.x * (eyeW * 0.3), look.y * (eyeH * 0.25));
-
-            const isPain = selectedChar === 'PAIN';
-            const img = eyeImages.current[selectedChar];
-
-            if (isPain) {
-                ctx.fillStyle = CHARACTERS.PAIN.color;
-                ctx.beginPath(); ctx.arc(0, 0, size, 0, Math.PI * 2); ctx.fill();
-                drawProceduralRinnegan(size);
-            } else if (img && img.complete && img.naturalWidth > 0) {
-                const offX = (CHARACTERS[selectedChar].offset?.x || 0) * size;
-                const offY = (CHARACTERS[selectedChar].offset?.y || 0) * size;
-                ctx.drawImage(img, -size + offX, -size + offY, size * 2, size * 2);
-            } else {
-                ctx.fillStyle = CHARACTERS[selectedChar].color;
-                ctx.beginPath(); ctx.arc(0, 0, size, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#000';
-                ctx.beginPath(); ctx.arc(0, 0, size * 0.22, 0, Math.PI * 2); ctx.fill();
-            }
-
-            ctx.save();
-            ctx.globalCompositeOperation = 'overlay';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 0.5;
-            ctx.globalAlpha = 0.2;
-            for (let i = 0; i < 60; i++) {
+            // 1. Clipping (Only if not closed)
+            if (blink > 0.05) {
+                ctx.save();
                 ctx.beginPath();
-                ctx.rotate(Math.PI / 30);
-                ctx.moveTo(size * 0.4, 0);
-                ctx.lineTo(size * 0.95, 0);
+                ctx.moveTo(-eyeW, 0);
+                ctx.quadraticCurveTo(0, -currentH, eyeW, 0);
+                ctx.quadraticCurveTo(0, currentH, -eyeW, 0);
+                ctx.clip();
+
+                // Sclera
+                const scleraGrad = ctx.createRadialGradient(0, 0, size * 0.5, 0, 0, eyeW);
+                scleraGrad.addColorStop(0, '#0a0808');
+                scleraGrad.addColorStop(1, '#020101');
+                ctx.fillStyle = scleraGrad;
+                ctx.fillRect(-eyeW, -eyeH, eyeW * 2, eyeH * 2);
+
+                // Iris Look Pivot
+                ctx.save();
+                ctx.translate(look.x * (eyeW * 0.32), look.y * (eyeH * 0.28));
+
+                const isPain = selectedChar === 'PAIN';
+                const img = eyeImages.current[selectedChar];
+
+                if (isPain) {
+                    ctx.fillStyle = CHARACTERS.PAIN.color;
+                    ctx.beginPath(); ctx.arc(0, 0, size, 0, Math.PI * 2); ctx.fill();
+                    drawProceduralRinnegan(size);
+                } else if (img && img.complete) {
+                    const offX = (CHARACTERS[selectedChar].offset?.x || 0) * size;
+                    const offY = (CHARACTERS[selectedChar].offset?.y || 0) * size;
+                    ctx.drawImage(img, -size + offX, -size + offY, size * 2, size * 2);
+                }
+
+                // depth overlays (Batched)
+                ctx.save();
+                ctx.globalCompositeOperation = 'overlay';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 0.5;
+                ctx.globalAlpha = 0.15;
+                ctx.beginPath();
+                for (let i = 0; i < 30; i++) {
+                    const ang = (i / 30) * Math.PI * 2;
+                    ctx.moveTo(Math.cos(ang) * size * 0.4, Math.sin(ang) * size * 0.4);
+                    ctx.lineTo(Math.cos(ang) * size * 0.95, Math.sin(ang) * size * 0.95);
+                }
                 ctx.stroke();
+                ctx.restore();
+
+                // Surface Reflection
+                ctx.fillStyle = '#ffffff';
+                ctx.globalAlpha = 0.12;
+                ctx.beginPath(); ctx.ellipse(-size * 0.4, -size * 0.4, size * 0.15, size * 0.25, -Math.PI / 4, 0, Math.PI * 2); ctx.fill();
+
+                ctx.restore(); // Irir pivot
+                ctx.restore(); // Clipping
             }
-            ctx.restore();
 
-            ctx.save();
-            ctx.setTransform(1, 0, 0, 1, x, y);
-            ctx.fillStyle = '#ffffff';
-            ctx.globalAlpha = 0.15;
-            ctx.beginPath(); ctx.ellipse(-size * 0.4, -size * 0.4, size * 0.15, size * 0.25, -Math.PI / 4, 0, Math.PI * 2); ctx.fill();
-            ctx.restore();
-
-            ctx.restore(); // Look pivot
-            ctx.restore(); // Clipping
-
+            // Eyelid Outlines
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 14;
             ctx.lineCap = 'round';
@@ -262,77 +266,100 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
         };
 
         const animate = (currentTime: number) => {
-            const deltaTime = (currentTime - lastTime) / 1000;
+            const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.05); // Cap delta to prevent jumps
             lastTime = currentTime;
 
-            const w = canvas.width;
-            const h = canvas.height;
+            const w = window.innerWidth;
+            const h = window.innerHeight;
 
             lightningStrike();
 
-            // Smooth Blink Logic (Delta based)
-            if (blinkPhase === 'IDLE' && Math.random() < 0.004) blinkPhase = 'CLOSING';
-            const blinkSpeed = 7.0; // Units per second
+            // Blink Logic
+            if (blinkPhase === 'IDLE' && Math.random() < 0.003) blinkPhase = 'CLOSING';
+            const blinkSpeed = 7.5;
             if (blinkPhase === 'CLOSING') {
-                blinkProgress -= blinkSpeed * deltaTime;
-                if (blinkProgress <= 0) { blinkProgress = 0; blinkPhase = 'OPENING'; }
+                blinkProgress = Math.max(0, blinkProgress - blinkSpeed * deltaTime);
+                if (blinkProgress === 0) blinkPhase = 'OPENING';
             } else if (blinkPhase === 'OPENING') {
-                blinkProgress += blinkSpeed * deltaTime;
-                if (blinkProgress >= 1) { blinkProgress = 1; blinkPhase = 'IDLE'; }
+                blinkProgress = Math.min(1, blinkProgress + blinkSpeed * deltaTime);
+                if (blinkProgress === 1) blinkPhase = 'IDLE';
             }
 
             const centerX = w / 2;
             const centerY = h / 2 - 40;
 
-            // Smooth Look Offset (Frame-rate independent lerp)
+            // Physics aware lerp for "Look"
             const targetLookX = (mouseRef.current.x - centerX) / centerX;
             const targetLookY = (mouseRef.current.y - centerY) / centerY;
-            const lerpFactor = 1 - Math.exp(-6 * deltaTime); // Smooth 6.0 constant
-            lookOffset.current.x += (targetLookX - lookOffset.current.x) * lerpFactor;
-            lookOffset.current.y += (targetLookY - lookOffset.current.y) * lerpFactor;
+            const lerpVal = 1 - Math.exp(-12 * deltaTime); // More responsive 12.0 constant
+            lookOffset.current.x += (targetLookX - lookOffset.current.x) * lerpVal;
+            lookOffset.current.y += (targetLookY - lookOffset.current.y) * lerpVal;
 
-            ctx.fillStyle = lightningActive ? (CHARACTERS[selectedChar].color + '0a') : '#010101';
+            // 1. CLEAR FRAME
+            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = lightningActive ? (CHARACTERS[selectedChar].color + '15') : '#010101';
             ctx.fillRect(0, 0, w, h);
 
-            const eyeSize = Math.min(w, h) * 0.28;
-            drawUltimateEye(centerX, centerY, eyeSize, lightningActive ? 0.35 : 0.22, blinkProgress, lookOffset.current);
+            // 2. RENDER RAIN (BATCHED BY COLOR)
+            const rainGroups: Record<string, any[]> = { '#ffffff': [], [CHARACTERS[selectedChar].color]: [] };
+            rain.forEach(r => {
+                const color = lightningActive ? '#ffffff' : r.c;
+                if (!rainGroups[color]) rainGroups[color] = [];
+                rainGroups[color].push(r);
 
-            // Particles physics
+                r.y += r.v * deltaTime;
+                r.x -= (r.v * 0.12) * deltaTime;
+                if (r.y > h) { r.y = -50; r.x = Math.random() * w; }
+            });
+
+            ctx.lineWidth = 1;
+            Object.entries(rainGroups).forEach(([color, drops]) => {
+                if (drops.length === 0) return;
+                ctx.strokeStyle = color;
+                ctx.beginPath();
+                drops.forEach(r => {
+                    ctx.globalAlpha = r.o; // Alpha change is cheap, stroke is expensive
+                    ctx.moveTo(r.x, r.y);
+                    ctx.lineTo(r.x - 2, r.y + r.l);
+                });
+                ctx.stroke();
+            });
+
+            // 3. RENDER PARTICLES (BATCHED)
+            ctx.fillStyle = CHARACTERS[selectedChar].color;
             particles.forEach(p => {
+                p.y -= p.v * deltaTime;
+                p.a += p.rot * deltaTime;
+                if (p.y < -20) { p.y = h + 20; p.x = Math.random() * w; }
+
                 ctx.save();
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.a);
-                ctx.globalAlpha = 0.3;
-                ctx.fillStyle = CHARACTERS[selectedChar].color;
+                ctx.globalAlpha = 0.25;
 
                 if (trait === 'FEATHERS') {
                     ctx.beginPath(); ctx.ellipse(0, 0, p.s * 4, p.s, 0.4, 0, Math.PI * 2); ctx.fill();
-                } else if (trait === 'GRAVITY') {
-                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.5;
-                    ctx.beginPath(); ctx.arc(0, 0, p.s * 5, 0, Math.PI * 2); ctx.stroke();
+                } else if (trait === 'EMBERS') {
+                    ctx.beginPath(); ctx.arc(0, 0, p.s, 0, Math.PI * 2); ctx.fill();
                 } else if (trait === 'KAMUI') {
                     ctx.beginPath(); ctx.moveTo(-p.s, -p.s); ctx.lineTo(p.s, 0); ctx.lineTo(0, p.s * 2); ctx.fill();
                 } else if (trait === 'CHIDORI') {
                     ctx.fillStyle = '#a0c4ff'; ctx.fillRect(0, 0, p.s, p.s * 6);
-                } else if (trait === 'EMBERS') {
-                    ctx.beginPath(); ctx.arc(0, 0, p.s, 0, Math.PI * 2); ctx.fill();
+                } else if (trait === 'GRAVITY') {
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.5;
+                    ctx.beginPath(); ctx.arc(0, 0, p.s * 5, 0, Math.PI * 2); ctx.stroke();
                 }
                 ctx.restore();
-
-                p.y -= p.v * deltaTime;
-                p.a += p.rot * deltaTime;
-                if (p.y < -20) { p.y = h + 20; p.x = Math.random() * w; }
             });
 
-            // Rain physics
-            rain.forEach(r => {
-                ctx.strokeStyle = lightningActive ? '#fff' : r.c;
-                ctx.globalAlpha = r.o;
-                ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x - 3, r.y + r.l); ctx.stroke();
-                r.y += r.v * deltaTime; r.x -= (r.v * 0.1) * deltaTime;
-                if (r.y > h) { r.y = -50; r.x = Math.random() * w; }
-            });
+            // 4. RENDER EYE
+            const eyeSize = Math.min(w, h) * 0.28;
+            drawUltimateEye(centerX, centerY, eyeSize, lightningActive ? 0.38 : 0.22, blinkProgress, lookOffset.current);
+
+            // 5. UPDATE CURSOR (MUST BE LAST FOR ZERO GAP)
+            if (cursorRef.current) {
+                cursorRef.current.style.transform = `translate3d(${mouseRef.current.x}px, ${mouseRef.current.y}px, 0) translate(-50%, -50%)`;
+            }
 
             requestRef.current = requestAnimationFrame(animate);
         };
@@ -344,67 +371,11 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
         };
     }, [isIntro, selectedChar]);
 
-    if (isIntro) {
+    // --- RENDER MEMOIZATION (CRITICAL FOR 60FPS) ---
+    const contentLayer = React.useMemo(() => {
+        const currentChar = CHARACTERS[selectedChar];
         return (
-            <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center p-8 overflow-hidden font-serif">
-                <div className="relative animate-pulse mb-8">
-                    <div className="text-[140px] font-black text-red-600 opacity-20 antialiased">暁</div>
-                </div>
-                <h1 className="text-white text-[10px] font-mono tracking-[2em] uppercase opacity-50">Justice Through Pain</h1>
-            </div>
-        );
-    }
-
-    const currentChar = CHARACTERS[selectedChar];
-
-    return (
-        <div
-            className="relative min-h-screen w-full bg-[#010101] overflow-x-hidden text-neutral-100 font-serif selection:bg-red-600 selection:text-white"
-            style={{ '--theme-color': currentChar.color } as any}
-            onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
-            onClick={(e) => {
-                setRipple({ x: e.clientX, y: e.clientY, active: true });
-                setTimeout(() => setRipple(prev => ({ ...prev, active: false })), 1000);
-            }}
-        >
-            <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none" />
-
-            {/* CHARACTER SELECTOR (SIDEBAR) */}
-            <div className="fixed right-8 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-6">
-                {Object.keys(CHARACTERS).map((key) => {
-                    const char = CHARACTERS[key as AkatsukiCharacter];
-                    const active = selectedChar === key;
-                    const isPain = key === 'PAIN';
-                    return (
-                        <button
-                            key={key}
-                            onClick={(e) => { e.stopPropagation(); setSelectedChar(key as AkatsukiCharacter); }}
-                            className={`group relative w-12 h-12 rounded-full border transition-all duration-500 overflow-hidden bg-zinc-950 flex items-center justify-center ${active ? 'scale-125 shadow-[0_0_20px_var(--theme-color)]' : 'opacity-40 grayscale hover:opacity-100 hover:grayscale-0'}`}
-                            style={{ borderColor: active ? currentChar.color : 'rgba(255,255,255,0.1)' }}
-                        >
-                            <img src={char.eye} alt={char.name} className="w-full h-full object-cover transform scale-150" onError={(e) => (e.currentTarget.style.display = 'none')} />
-                            <div className="absolute inset-0 transition-opacity opacity-0 group-hover:opacity-100" style={{ backgroundColor: `${char.color}20` }} />
-                            <div className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/90 border px-3 py-1 text-[8px] font-mono uppercase tracking-[0.4em] opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap" style={{ borderColor: `${char.color}40` }}>
-                                {char.name}
-                            </div>
-                        </button>
-                    );
-                })}
-            </div>
-
-            {/* CINEMATIC BARS */}
-            <div className="fixed top-0 left-0 w-full h-12 bg-black z-50 border-b flex items-center px-12 justify-between transition-colors duration-500" style={{ borderColor: `${currentChar.color}20` }}>
-                <span className="text-[9px] font-mono tracking-[0.8em] uppercase italic opacity-50 transition-colors" style={{ color: currentChar.color }}>{currentChar.name} vision active</span>
-                <span className="text-[9px] font-mono tracking-[0.8em] opacity-50 uppercase">Agency: {profile.name}</span>
-            </div>
-            <div className="fixed bottom-0 left-0 w-full h-12 bg-black z-50 border-t flex items-center px-12 justify-between transition-colors duration-500" style={{ borderColor: `${currentChar.color}20` }}>
-                <span className="text-[9px] font-mono tracking-[0.8em] uppercase italic truncate max-w-lg transition-colors" style={{ color: currentChar.color }}>{currentChar.quote}</span>
-                <span className="text-[9px] font-mono font-black uppercase tracking-tighter shrink-0 transition-colors" style={{ color: currentChar.color }}>{currentChar.rank}</span>
-            </div>
-
-            {/* CONTENT LAYER */}
-            <div className="relative z-20 container mx-auto px-8 pt-40 pb-32">
-
+            <div className="relative z-20 container mx-auto px-8 pt-40 pb-32 pointer-events-none children-auto-pointer">
                 <header className="max-w-6xl mx-auto mb-48 flex flex-col items-center text-center">
                     <div className="relative mb-12">
                         <div className="absolute inset-0 blur-[120px] opacity-20 animate-pulse transition-colors duration-1000" style={{ backgroundColor: currentChar.color }} />
@@ -419,33 +390,18 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                             "{profile.bio}"
                         </p>
 
-                        <div className="flex flex-wrap justify-center gap-6">
+                        <div className="flex flex-wrap justify-center gap-6 pointer-events-auto">
                             {Object.entries(profile.socials || {})
                                 .filter(([_, value]) => value && typeof value === 'string' && value.trim() !== '')
                                 .map(([k, v]) => (
                                     <a key={k} href={v as string} target="_blank" rel="noreferrer"
                                         className="group relative px-10 py-4 bg-zinc-950/50 border border-white/5 overflow-hidden transition-all duration-500"
-                                        style={{ borderColor: 'rgba(255,255,255,0.05)' }}
                                     >
                                         <div className="absolute inset-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500" style={{ backgroundColor: `${currentChar.color}15` }} />
-                                        <span className="relative text-[10px] font-mono tracking-[0.4em] uppercase font-bold text-neutral-400 group-hover:text-theme transition-colors" style={{ color: 'inherit' }}>{k}</span>
+                                        <span className="relative text-[10px] font-mono tracking-[0.4em] uppercase font-bold text-neutral-400 group-hover:text-white transition-colors">{k}</span>
                                     </a>
                                 ))}
                         </div>
-                    </div>
-
-                    <div className="mt-32 grid grid-cols-2 lg:grid-cols-4 gap-12 text-left border-y border-white/5 py-12 w-full max-w-4xl">
-                        {[
-                            { label: 'Souls_Caught', val: visitorCount.toLocaleString() },
-                            { label: 'Bloodline', val: currentChar.bloodline },
-                            { label: 'Eye_Status', val: selectedChar },
-                            { label: 'Power_Level', val: currentChar.rank }
-                        ].map(s => (
-                            <div key={s.label}>
-                                <div className="text-[8px] font-mono text-neutral-600 uppercase tracking-widest mb-2">{s.label}</div>
-                                <div className="text-xl font-bold tracking-tighter uppercase transition-colors" style={{ color: currentChar.color }}>{s.val}</div>
-                            </div>
-                        ))}
                     </div>
                 </header>
 
@@ -455,7 +411,7 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                         <span className="text-6xl font-black text-white/5 select-none transition-colors" style={{ color: `${currentChar.color}05` }}>叛</span>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-12">
+                    <div className="grid grid-cols-1 gap-12 pointer-events-auto">
                         {data.map((item, i) => (
                             <a
                                 key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" onClick={() => onLinkClick(item.id)}
@@ -478,8 +434,86 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                         ))}
                     </div>
                 </main>
+            </div>
+        );
+    }, [profile, data, selectedChar, onLinkClick]);
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start max-w-6xl mx-auto text-left">
+    if (isIntro) {
+        return (
+            <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center p-8 overflow-hidden font-serif">
+                <div className="relative animate-pulse mb-8">
+                    <div className="text-[140px] font-black text-red-600 opacity-20 antialiased">暁</div>
+                </div>
+                <h1 className="text-white text-[10px] font-mono tracking-[2em] uppercase opacity-50">Justice Through Pain</h1>
+            </div>
+        );
+    }
+
+    const currentChar = CHARACTERS[selectedChar];
+
+    return (
+        <div
+            className="relative min-h-screen w-full bg-[#010101] overflow-x-hidden text-neutral-100 font-serif selection:bg-red-600 selection:text-white cursor-none"
+            style={{ '--theme-color': currentChar.color } as any}
+            onClick={(e) => {
+                setRipple({ x: e.clientX, y: e.clientY, active: true });
+                setTimeout(() => setRipple(prev => ({ ...prev, active: false })), 1000);
+            }}
+        >
+            <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none" />
+
+            {/* CHARACTER SELECTOR (SIDEBAR) */}
+            <div className="fixed right-8 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-6">
+                {Object.keys(CHARACTERS).map((key) => {
+                    const char = CHARACTERS[key as AkatsukiCharacter];
+                    const active = selectedChar === key;
+                    return (
+                        <button
+                            key={key}
+                            onClick={(e) => { e.stopPropagation(); setSelectedChar(key as AkatsukiCharacter); }}
+                            className={`group relative w-12 h-12 rounded-full border transition-all duration-500 overflow-hidden bg-zinc-950 flex items-center justify-center ${active ? 'scale-125 shadow-[0_0_20px_var(--theme-color)]' : 'opacity-40 grayscale hover:opacity-100 hover:grayscale-0'}`}
+                            style={{ borderColor: active ? currentChar.color : 'rgba(255,255,255,0.1)' }}
+                        >
+                            <img src={char.eye} alt={char.name} className="w-full h-full object-cover transform scale-150" />
+                            <div className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/90 border px-3 py-1 text-[8px] font-mono uppercase tracking-[0.4em] opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap" style={{ borderColor: `${char.color}40` }}>
+                                {char.name}
+                            </div>
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* CINEMATIC BARS */}
+            <div className="fixed top-0 left-0 w-full h-12 bg-black z-50 border-b flex items-center px-12 justify-between" style={{ borderColor: `${currentChar.color}20` }}>
+                <span className="text-[9px] font-mono tracking-[0.8em] uppercase italic" style={{ color: currentChar.color }}>{currentChar.name} vision_active</span>
+                <span className="text-[9px] font-mono tracking-[0.8em] opacity-50 uppercase">Agency: {profile.name}</span>
+            </div>
+
+            <div className="fixed bottom-0 left-0 w-full h-12 bg-black z-50 border-t flex items-center px-12 justify-between" style={{ borderColor: `${currentChar.color}20` }}>
+                <span className="text-[9px] font-mono tracking-[0.8em] uppercase italic truncate max-w-lg" style={{ color: currentChar.color }}>{currentChar.quote}</span>
+                <span className="text-[9px] font-mono font-black uppercase tracking-tighter" style={{ color: currentChar.color }}>{currentChar.rank}</span>
+            </div>
+
+            {/* CONTENT LAYER */}
+            {contentLayer}
+
+            {/* LIVE DATA OVERLAY (Independent Stats) */}
+            <div className="relative z-20 container mx-auto px-8">
+                <div className="mb-48 grid grid-cols-2 lg:grid-cols-4 gap-12 text-left border-y border-white/5 py-12 w-full max-w-4xl mx-auto">
+                    {[
+                        { label: 'Souls_Caught', val: visitorCount.toLocaleString() },
+                        { label: 'Bloodline', val: currentChar.bloodline },
+                        { label: 'Eye_Status', val: selectedChar },
+                        { label: 'Power_Level', val: currentChar.rank }
+                    ].map(s => (
+                        <div key={s.label}>
+                            <div className="text-[8px] font-mono text-neutral-600 uppercase tracking-widest mb-2">{s.label}</div>
+                            <div className="text-xl font-bold tracking-tighter uppercase transition-colors" style={{ color: currentChar.color }}>{s.val}</div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start max-w-6xl mx-auto text-left pb-32">
                     <div>
                         <div className="mb-12">
                             <h2 className="text-xs font-mono tracking-[1em] text-zinc-500 uppercase mb-4 font-bold">Resonance</h2>
@@ -504,13 +538,13 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                         <Guestbook isInline theme="AKATSUKI" />
                     </div>
                 </div>
-
             </div>
 
             {/* CURSOR */}
             <div
-                className="fixed z-[100] pointer-events-none mix-blend-difference"
-                style={{ left: mousePos.x, top: mousePos.y, transform: 'translate(-50%, -50%)' }}
+                ref={cursorRef}
+                className="fixed z-[100] pointer-events-none mix-blend-difference will-change-transform"
+                style={{ left: 0, top: 0, transform: 'translate3d(-100px, -100px, 0)' }}
             >
                 <div className="relative w-16 h-16 border border-white/20 rounded-full flex items-center justify-center animate-[spin_20s_linear_infinite]">
                     {[...Array(3)].map((_, i) => (
@@ -539,6 +573,7 @@ const AkatsukiTheme: React.FC<AkatsukiThemeProps> = ({ data, profile, onLinkClic
                 .text-theme { color: var(--theme-color) !important; }
                 .border-theme { border-color: var(--theme-color) !important; }
                 .bg-theme { background-color: var(--theme-color) !important; }
+                .children-auto-pointer * { pointer-events: auto; }
             `}</style>
         </div>
     );

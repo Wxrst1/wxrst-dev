@@ -82,41 +82,56 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const recordLock = React.useRef(false);
+
   const recordVisit = async () => {
+    if (recordLock.current) return;
+    recordLock.current = true;
+
     try {
-      // 1. Total Visits
-      const { data } = await supabase.from('analytics').select('count').eq('key', 'total_visits').maybeSingle();
-      const currentCount = data?.count || 0;
-      await supabase.from('analytics').upsert({ key: 'total_visits', count: currentCount + 1 }, { onConflict: 'key' });
+      const now = Date.now();
+      const lastVisit = localStorage.getItem('last_visit_timestamp');
+      const cooldown = 24 * 60 * 60 * 1000; // 24 hours
 
-      // 2. Track Referrer (Real Data)
-      let referrer = 'Direct / Unknown';
-      if (document.referrer) {
-        try {
-          const url = new URL(document.referrer);
-          referrer = url.hostname;
-        } catch {
-          referrer = 'Unknown Source';
+      const shouldRecord = !lastVisit || (now - parseInt(lastVisit)) > cooldown;
+
+      if (shouldRecord) {
+        // 1. Total Visits
+        const { data } = await supabase.from('analytics').select('count').eq('key', 'total_visits').maybeSingle();
+        const currentCount = data?.count || 0;
+        await supabase.from('analytics').upsert({ key: 'total_visits', count: currentCount + 1 }, { onConflict: 'key' });
+
+        // Update local timestamp immediately to prevent race conditions
+        localStorage.setItem('last_visit_timestamp', now.toString());
+
+        // 2. Track Referrer (Real Data)
+        let referrer = 'Direct / Unknown';
+        if (document.referrer) {
+          try {
+            const url = new URL(document.referrer);
+            referrer = url.hostname;
+          } catch {
+            referrer = 'Unknown Source';
+          }
         }
+        const refKey = `referrer:${referrer}`;
+        const { data: refData } = await supabase.from('analytics').select('count').eq('key', refKey).maybeSingle();
+        await supabase.from('analytics').upsert({ key: refKey, count: (refData?.count || 0) + 1 }, { onConflict: 'key' });
+
+        // 3. Track Device/Platform (Real Data for "Search Queries" replacement)
+        const userAgent = navigator.userAgent || '';
+        let platform = 'Unknown';
+        if (/android/i.test(userAgent)) platform = 'Android';
+        else if (/iPad|iPhone|iPod/.test(userAgent)) platform = 'iOS';
+        else if (/windows phone/i.test(userAgent)) platform = 'Windows Phone';
+        else if (/Win/i.test(userAgent)) platform = 'Windows';
+        else if (/Mac/i.test(userAgent)) platform = 'MacOS';
+        else if (/Linux/i.test(userAgent)) platform = 'Linux';
+
+        const platKey = `platform:${platform}`;
+        const { data: platData } = await supabase.from('analytics').select('count').eq('key', platKey).maybeSingle();
+        await supabase.from('analytics').upsert({ key: platKey, count: (platData?.count || 0) + 1 }, { onConflict: 'key' });
       }
-      const refKey = `referrer:${referrer}`;
-      const { data: refData } = await supabase.from('analytics').select('count').eq('key', refKey).maybeSingle();
-      await supabase.from('analytics').upsert({ key: refKey, count: (refData?.count || 0) + 1 }, { onConflict: 'key' });
-
-      // 3. Track Device/Platform (Real Data for "Search Queries" replacement)
-      const userAgent = navigator.userAgent || '';
-      let platform = 'Unknown';
-      if (/android/i.test(userAgent)) platform = 'Android';
-      else if (/iPad|iPhone|iPod/.test(userAgent)) platform = 'iOS';
-      else if (/windows phone/i.test(userAgent)) platform = 'Windows Phone';
-      else if (/Win/i.test(userAgent)) platform = 'Windows';
-      else if (/Mac/i.test(userAgent)) platform = 'MacOS';
-      else if (/Linux/i.test(userAgent)) platform = 'Linux';
-
-      const platKey = `platform:${platform}`;
-      const { data: platData } = await supabase.from('analytics').select('count').eq('key', platKey).maybeSingle();
-      await supabase.from('analytics').upsert({ key: platKey, count: (platData?.count || 0) + 1 }, { onConflict: 'key' });
-
     } catch (e) {
       console.warn('Analytics tracking failed', e);
     }
