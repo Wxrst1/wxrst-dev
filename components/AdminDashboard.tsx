@@ -17,6 +17,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profil
     const [links, setLinks] = useState(profile.links);
     const [isSaving, setIsSaving] = useState(false);
     const [commentList, setCommentList] = useState<any[]>([]);
+    const [deletedLinkIds, setDeletedLinkIds] = useState<number[]>([]);
 
     // SEO Data State
     const [referrers, setReferrers] = useState<Array<{ src: string; count: number; pc: string }>>([]);
@@ -278,9 +279,24 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
         setLinks(newLinks);
     };
 
+    const handleDeleteLink = (index: number) => {
+        const linkToDelete = links[index];
+        if (linkToDelete && linkToDelete.id) {
+            setDeletedLinkIds(prev => [...prev, linkToDelete.id]);
+        }
+        setLinks(links.filter((_, idx) => idx !== index));
+    };
+
     const handleSaveLinks = async () => {
         setIsSaving(true);
         try {
+            // Delete removed links from DB first
+            if (deletedLinkIds.length > 0) {
+                const { error: delError } = await supabase.from('links').delete().in('id', deletedLinkIds);
+                if (delError) throw delError;
+                setDeletedLinkIds([]);
+            }
+
             // For simplicity, we delete all and re-insert, or upsert if we had IDs
             // A better way is to handle each row, but for this project upserting with IDs works.
             const toUpdate = links.filter(l => l.id).map(l => ({
@@ -709,7 +725,7 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
                                                     <option value="OFFLINE">OFFLINE</option>
                                                 </select>
                                             </div>
-                                            <button onClick={() => setLinks(links.filter((_, idx) => idx !== i))} className="p-3 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-500/20">✕</button>
+                                            <button onClick={() => handleDeleteLink(i)} className="p-3 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-500/20">✕</button>
                                         </div>
                                     ))}
                                 </div>
