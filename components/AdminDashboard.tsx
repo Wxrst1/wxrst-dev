@@ -8,6 +8,7 @@ interface AdminDashboardProps {
     profile: UserProfile;
     setProfile: (p: UserProfile) => void;
     refreshData: () => void;
+    initialTab?: 'ANALYTICS' | 'PROFILE' | 'LINKS' | 'COMMENTS';
 }
 
 // Brand SVG Icons for social links
@@ -67,7 +68,7 @@ const SocialIcon = ({ type, className = "w-4 h-4" }: { type: string; className?:
     }
 };
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profile, setProfile, refreshData }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profile, setProfile, refreshData, initialTab }) => {
     const [activeTab, setActiveTab] = useState<'ANALYTICS' | 'PROFILE' | 'LINKS' | 'COMMENTS'>('ANALYTICS');
     const [stats, setStats] = useState({ visits: 0, reactions: 0, comments: 0, totalClicks: 0 });
     const [links, setLinks] = useState(profile.links);
@@ -101,8 +102,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profil
             setLinks(profile.links);
             setLocalProfile({ ...profile });
             setDeletedLinkIds([]);
+            if (initialTab) {
+                setActiveTab(initialTab);
+            }
         }
-    }, [isOpen, profile]);
+    }, [isOpen, profile, initialTab]);
 
     // Real-Time Traffic Poller
     useEffect(() => {

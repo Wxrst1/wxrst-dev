@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ThemeType, MOCK_DATA, DEFAULT_PROFILE, getAutoTheme, UserProfile } from './types';
 import ThemeSwitcher from './components/ThemeSwitcher';
-import ProfileEditor from './components/ProfileEditor';
 import { supabase } from './supabase';
 import VisitorCounter from './components/VisitorCounter';
 import QuickReactions from './components/QuickReactions';
@@ -60,7 +59,7 @@ const App: React.FC = () => {
     return (saved as ThemeType) || getAutoTheme();
   });
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [adminDashboardTab, setAdminDashboardTab] = useState<'ANALYTICS' | 'PROFILE' | 'LINKS' | 'COMMENTS'>('ANALYTICS');
   const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -303,7 +302,10 @@ const App: React.FC = () => {
     const commonProps = {
       data: dbData,
       profile,
-      onEditProfile: () => setIsEditorOpen(true),
+      onEditProfile: () => {
+        setAdminDashboardTab('PROFILE');
+        setIsAdminDashboardOpen(true);
+      },
       onLinkClick: handleLinkClick,
       isAdmin,
     };
@@ -493,33 +495,20 @@ const App: React.FC = () => {
             profile={profile}
             setProfile={setProfile}
             refreshData={fetchProfileData}
-          />
-
-          <ProfileEditor
-            isOpen={isEditorOpen}
-            onClose={() => {
-              setIsEditorOpen(false);
-              fetchProfileData(); // Refresh after save
-            }}
-            profile={profile}
-            setProfile={setProfile}
+            initialTab={adminDashboardTab}
           />
 
           {/* Admin Toolbar */}
           <div className="fixed top-8 left-8 z-[999] flex gap-2">
             <button
-              onClick={() => setIsAdminDashboardOpen(true)}
+              onClick={() => {
+                setAdminDashboardTab('ANALYTICS');
+                setIsAdminDashboardOpen(true);
+              }}
               className="px-4 py-2 border border-white/20 bg-black/40 backdrop-blur-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all flex items-center gap-2 group shadow-2xl"
             >
               <span className="text-lg">⚡</span>
               <span className="hidden md:inline group-hover:tracking-tighter">Command_Center</span>
-            </button>
-            <button
-              onClick={() => setIsEditorOpen(true)}
-              className="px-4 py-2 border border-white/20 bg-black/40 backdrop-blur-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all flex items-center gap-2 group shadow-2xl"
-            >
-              <span className="text-lg">👤</span>
-              <span className="hidden md:inline group-hover:tracking-tighter">Identity_Override</span>
             </button>
           </div>
         </>
