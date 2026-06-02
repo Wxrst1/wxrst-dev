@@ -34,12 +34,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, profil
         }));
     });
     const lastTrafficStats = React.useRef({ visits: 0, clicks: 0, reactions: 0, comments: 0, initialized: false });
+    const [localProfile, setLocalProfile] = useState<UserProfile>(() => ({ ...profile }));
 
     useEffect(() => {
         if (isOpen) {
             fetchStats();
             fetchComments();
             setLinks(profile.links);
+            setLocalProfile({ ...profile });
+            setDeletedLinkIds([]);
         }
     }, [isOpen, profile]);
 
@@ -244,25 +247,28 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
         setIsSaving(true);
         try {
             const updates = [
-                { key: 'name', value: profile.name },
-                { key: 'title', value: profile.title },
-                { key: 'bio_text', value: profile.bio },
-                { key: 'avatar_url', value: profile.avatarUrl },
-                { key: 'social_github', value: profile.socials?.github || '' },
-                { key: 'social_twitter', value: profile.socials?.twitter || '' },
-                { key: 'social_linkedin', value: profile.socials?.linkedin || '' },
-                { key: 'social_instagram', value: profile.socials?.instagram || '' },
-                { key: 'social_youtube', value: profile.socials?.youtube || '' },
-                { key: 'social_discord', value: profile.socials?.discord || '' },
-                { key: 'social_links', value: JSON.stringify(profile.socials || {}) },
-                { key: 'activity_playing', value: profile.activity_playing || '' },
+                { key: 'name', value: localProfile.name },
+                { key: 'title', value: localProfile.title },
+                { key: 'bio_text', value: localProfile.bio },
+                { key: 'avatar_url', value: localProfile.avatarUrl },
+                { key: 'social_github', value: localProfile.socials?.github || '' },
+                { key: 'social_twitter', value: localProfile.socials?.twitter || '' },
+                { key: 'social_linkedin', value: localProfile.socials?.linkedin || '' },
+                { key: 'social_instagram', value: localProfile.socials?.instagram || '' },
+                { key: 'social_youtube', value: localProfile.socials?.youtube || '' },
+                { key: 'social_discord', value: localProfile.socials?.discord || '' },
+                { key: 'social_links', value: JSON.stringify(localProfile.socials || {}) },
+                { key: 'activity_playing', value: localProfile.activity_playing || '' },
             ];
 
-            await supabase.from('profile_config').upsert(updates, { onConflict: 'key' });
+            const { error } = await supabase.from('profile_config').upsert(updates, { onConflict: 'key' });
+            if (error) throw error;
+            setProfile(localProfile);
             refreshData();
             alert('Profile updated successfully!');
         } catch (err) {
             console.error(err);
+            alert('Failed to save profile.');
         } finally {
             setIsSaving(false);
         }
@@ -341,12 +347,12 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
 
     return (
         <div className="fixed inset-0 z-[20000] flex items-center justify-center bg-black/90 backdrop-blur-2xl p-4 md:p-12 overflow-hidden">
-            <div className="w-full max-w-6xl h-full bg-zinc-900 border border-white/10 flex flex-col shadow-3xl animate-in fade-in zoom-in duration-300">
+            <div className="w-full max-w-6xl h-full bg-zinc-900 border border-white/10 flex flex-col shadow-3xl animate-in fade-in zoom-in-95 duration-300">
 
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-white/10 bg-black/20">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white flex items-center justify-center">
+                        <div className="w-12 h-12 bg-white flex items-center justify-center shadow-lg">
                             <span className="text-black font-black text-xl">AD</span>
                         </div>
                         <div>
@@ -354,7 +360,7 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
                             <p className="text-white/40 text-[10px] uppercase tracking-widest">Admin Authorization Level: O5-X</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="w-10 h-10 flex items-center justify-center border border-white/10 hover:bg-red-500 transition-all text-white">✕</button>
+                    <button onClick={onClose} className="w-10 h-10 flex items-center justify-center border border-white/10 hover:bg-red-500 active:scale-[0.93] transition-all duration-150 text-white">✕</button>
                 </div>
 
                 <div className="flex flex-1 overflow-hidden">
@@ -369,7 +375,7 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`w-full p-4 flex items-center gap-3 transition-all border border-transparent ${activeTab === tab.id ? 'bg-white text-black font-black' : 'text-white/60 hover:border-white/20 hover:text-white'}`}
+                                className={`w-full p-4 flex items-center gap-3 border border-transparent active:scale-[0.98] transition-all duration-150 ${activeTab === tab.id ? 'bg-white text-black font-black shadow-[0_4px_15px_rgba(255,255,255,0.1)]' : 'text-white/60 hover:border-white/20 hover:text-white'}`}
                             >
                                 <span className="text-lg">{tab.icon}</span>
                                 <span className="text-[10px] uppercase font-bold tracking-widest">{tab.label}</span>
@@ -646,51 +652,39 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-[10px] uppercase font-black text-white/40 tracking-widest">Operator_Name</label>
-                                        <input className="w-full bg-black border border-white/10 p-4 text-white font-mono text-sm focus:border-white outline-none" value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} />
+                                        <input className="w-full bg-black/60 border border-white/10 p-4 text-white font-mono text-sm focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(6,182,212,0.15)] outline-none transition-all duration-200" value={localProfile.name} onChange={e => setLocalProfile({ ...localProfile, name: e.target.value })} />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] uppercase font-black text-white/40 tracking-widest">Codename / Designation</label>
-                                        <input className="w-full bg-black border border-white/10 p-4 text-white font-mono text-sm focus:border-white outline-none" value={profile.title} onChange={e => setProfile({ ...profile, title: e.target.value })} />
+                                        <input className="w-full bg-black/60 border border-white/10 p-4 text-white font-mono text-sm focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(6,182,212,0.15)] outline-none transition-all duration-200" value={localProfile.title} onChange={e => setLocalProfile({ ...localProfile, title: e.target.value })} />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase font-black text-white/40 tracking-widest">Bio_Data_Exfiltration</label>
-                                    <textarea className="w-full bg-black border border-white/10 p-4 text-white font-mono text-sm focus:border-white outline-none h-32 resize-none" value={profile.bio} onChange={e => setProfile({ ...profile, bio: e.target.value })} />
+                                    <textarea className="w-full bg-black/60 border border-white/10 p-4 text-white font-mono text-sm focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(6,182,212,0.15)] outline-none h-32 resize-none transition-all duration-200" value={localProfile.bio} onChange={e => setLocalProfile({ ...localProfile, bio: e.target.value })} />
                                 </div>
                                 <div className="space-y-2">
                                     {/* Socials Grid */}
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1">
-                                            <label className="text-[8px] uppercase font-black text-white/20">GitHub</label>
-                                            <input className="w-full bg-black border border-white/10 p-3 text-white font-mono text-xs focus:border-white outline-none" value={profile.socials?.github || ''} onChange={e => setProfile({ ...profile, socials: { ...profile.socials, github: e.target.value } })} />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[8px] uppercase font-black text-white/20">X / Twitter</label>
-                                            <input className="w-full bg-black border border-white/10 p-3 text-white font-mono text-xs focus:border-white outline-none" value={profile.socials?.twitter || ''} onChange={e => setProfile({ ...profile, socials: { ...profile.socials, twitter: e.target.value } })} />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[8px] uppercase font-black text-white/20">LinkedIn</label>
-                                            <input className="w-full bg-black border border-white/10 p-3 text-white font-mono text-xs focus:border-white outline-none" value={profile.socials?.linkedin || ''} onChange={e => setProfile({ ...profile, socials: { ...profile.socials, linkedin: e.target.value } })} />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[8px] uppercase font-black text-white/20">Instagram</label>
-                                            <input className="w-full bg-black border border-white/10 p-3 text-white font-mono text-xs focus:border-white outline-none" value={profile.socials?.instagram || ''} onChange={e => setProfile({ ...profile, socials: { ...profile.socials, instagram: e.target.value } })} />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[8px] uppercase font-black text-white/20">YouTube</label>
-                                            <input className="w-full bg-black border border-white/10 p-3 text-white font-mono text-xs focus:border-white outline-none" value={profile.socials?.youtube || ''} onChange={e => setProfile({ ...profile, socials: { ...profile.socials, youtube: e.target.value } })} />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[8px] uppercase font-black text-white/20">Discord</label>
-                                            <input className="w-full bg-black border border-white/10 p-3 text-white font-mono text-xs focus:border-white outline-none" value={profile.socials?.discord || ''} onChange={e => setProfile({ ...profile, socials: { ...profile.socials, discord: e.target.value } })} />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[8px] uppercase font-black text-white/20">Steam</label>
-                                            <input className="w-full bg-black border border-white/10 p-3 text-white font-mono text-xs focus:border-white outline-none" value={profile.socials?.steam || ''} onChange={e => setProfile({ ...profile, socials: { ...profile.socials, steam: e.target.value } })} />
-                                        </div>
+                                        {['github', 'twitter', 'linkedin', 'instagram', 'youtube', 'discord', 'steam'].map(social => (
+                                            <div key={social} className="space-y-1">
+                                                <label className="text-[8px] uppercase font-black text-white/20 capitalize">{social}</label>
+                                                <input
+                                                    className="w-full bg-black/60 border border-white/10 p-3 text-white font-mono text-xs focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(6,182,212,0.15)] outline-none transition-all duration-200"
+                                                    value={localProfile.socials?.[social as keyof UserProfile['socials']] || ''}
+                                                    onChange={e => setLocalProfile({
+                                                        ...localProfile,
+                                                        socials: {
+                                                            ...localProfile.socials,
+                                                            [social]: e.target.value
+                                                        }
+                                                    })}
+                                                />
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                                <button onClick={handleSaveProfile} disabled={isSaving} className="px-12 py-4 bg-white text-black font-black uppercase tracking-[0.2em] hover:bg-cyan-500 transition-all disabled:opacity-50">
+                                <button onClick={handleSaveProfile} disabled={isSaving} className="px-12 py-4 bg-white text-black font-black uppercase tracking-[0.2em] hover:bg-cyan-500 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 mt-4 shadow-lg">
                                     {isSaving ? 'Syncing_Data...' : 'Update_Neural_Profile'}
                                 </button>
                             </div>
@@ -700,36 +694,40 @@ RADICAL MORPH // INTELLIGENCE REPORT [${date}]
                             <div className="space-y-8 animate-in slide-in-from-right duration-500">
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-white font-black uppercase tracking-widest text-xs">Active_Neural_Pathways</h3>
-                                    <button onClick={handleAddLink} className="px-4 py-2 border border-white/20 text-white text-[10px] font-black uppercase hover:bg-white hover:text-black transition-all">Add_New_Node</button>
+                                    <button onClick={handleAddLink} className="px-4 py-2 border border-white/20 text-white text-[10px] font-black uppercase hover:bg-white hover:text-black active:scale-[0.95] transition-all duration-150">Add_New_Node</button>
                                 </div>
                                 <div className="space-y-4">
                                     {links.map((link, i) => (
-                                        <div key={i} className="p-6 bg-black border border-white/5 flex flex-wrap gap-4 items-end group">
+                                        <div 
+                                            key={i} 
+                                            className="p-6 bg-black/60 border border-white/5 flex flex-wrap gap-4 items-end group animate-in fade-in slide-in-from-bottom-2 duration-300"
+                                            style={{ animationDelay: `${i * 45}ms` }}
+                                        >
                                             <div className="flex-1 min-w-[200px] space-y-2">
                                                 <label className="text-[8px] uppercase font-black text-white/20 tracking-widest">Node_Label</label>
-                                                <input className="w-full bg-zinc-900 border border-white/10 p-3 text-white text-xs outline-none focus:border-cyan-500" value={link.label} onChange={e => handleUpdateLink(i, 'label', e.target.value)} />
+                                                <input className="w-full bg-zinc-900 border border-white/10 p-3 text-white text-xs outline-none focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(6,182,212,0.15)] transition-all duration-200" value={link.label} onChange={e => handleUpdateLink(i, 'label', e.target.value)} />
                                             </div>
                                             <div className="flex-[2] min-w-[200px] space-y-2">
                                                 <label className="text-[8px] uppercase font-black text-white/20 tracking-widest">Target_URL</label>
-                                                <input className="w-full bg-zinc-900 border border-white/10 p-3 text-white text-xs outline-none focus:border-cyan-500" value={link.url} onChange={e => handleUpdateLink(i, 'url', e.target.value)} />
+                                                <input className="w-full bg-zinc-900 border border-white/10 p-3 text-white text-xs outline-none focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(6,182,212,0.15)] transition-all duration-200" value={link.url} onChange={e => handleUpdateLink(i, 'url', e.target.value)} />
                                             </div>
                                             <div className="w-32 space-y-2">
                                                 <label className="text-[8px] uppercase font-black text-white/20 tracking-widest">Category</label>
-                                                <input className="w-full bg-zinc-900 border border-white/10 p-3 text-white text-xs outline-none focus:border-cyan-500" value={link.category || ''} onChange={e => handleUpdateLink(i, 'category', e.target.value)} placeholder="GENERAL" />
+                                                <input className="w-full bg-zinc-900 border border-white/10 p-3 text-white text-xs outline-none focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(6,182,212,0.15)] transition-all duration-200" value={link.category || ''} onChange={e => handleUpdateLink(i, 'category', e.target.value)} placeholder="GENERAL" />
                                             </div>
                                             <div className="w-32 space-y-2">
                                                 <label className="text-[8px] uppercase font-black text-white/20 tracking-widest">Status</label>
-                                                <select className="w-full bg-zinc-900 border border-white/10 p-3 text-white text-xs outline-none focus:border-cyan-500" value={link.status} onChange={e => handleUpdateLink(i, 'status', e.target.value)}>
+                                                <select className="w-full bg-zinc-900 border border-white/10 p-3 text-white text-xs outline-none focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(6,182,212,0.15)] transition-all duration-200" value={link.status} onChange={e => handleUpdateLink(i, 'status', e.target.value)}>
                                                     <option value="ACTIVE">ACTIVE</option>
                                                     <option value="ENCRYPTED">ENCRYPTED</option>
                                                     <option value="OFFLINE">OFFLINE</option>
                                                 </select>
                                             </div>
-                                            <button onClick={() => handleDeleteLink(i)} className="p-3 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-500/20">✕</button>
+                                            <button onClick={() => handleDeleteLink(i)} className="p-3 text-red-500 hover:bg-red-500 hover:text-white active:scale-[0.93] transition-all duration-150 border border-red-500/20">✕</button>
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={handleSaveLinks} disabled={isSaving} className="px-12 py-4 bg-white text-black font-black uppercase tracking-[0.2em] hover:bg-cyan-500 transition-all disabled:opacity-50 mt-8">
+                                <button onClick={handleSaveLinks} disabled={isSaving} className="px-12 py-4 bg-white text-black font-black uppercase tracking-[0.2em] hover:bg-cyan-500 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 mt-8 shadow-lg">
                                     {isSaving ? 'Syncing_Nodes...' : 'Verify_Network_Array'}
                                 </button>
                             </div>
