@@ -76,6 +76,9 @@ export function ModelScene({ modelPath, className }: ModelSceneProps) {
         const targetRotation = { x: 0, y: 0 };
         const currentRotation = { x: 0, y: 0 };
         let modelSizeY = 1.0;
+        let initialOffsetY = 0;
+        let initialOffsetX = 0;
+        let initialOffsetZ = 0;
 
         loader.load(
             modelPath,
@@ -92,7 +95,6 @@ export function ModelScene({ modelPath, className }: ModelSceneProps) {
                         if (child.material) {
                             child.material.roughness = 0.5;
                             child.material.metalness = 0.1;
-                            // Ensure textures are fully illuminated
                             child.material.needsUpdate = true;
                         }
                     }
@@ -109,7 +111,7 @@ export function ModelScene({ modelPath, className }: ModelSceneProps) {
                     }
                 });
 
-                // Auto-center and fit model in camera view
+                // Auto-center and fit model in camera view (Calculate ONCE)
                 const box = new THREE.Box3().setFromObject(model);
                 const size = box.getSize(new THREE.Vector3());
                 const center = box.getCenter(new THREE.Vector3());
@@ -117,15 +119,20 @@ export function ModelScene({ modelPath, className }: ModelSceneProps) {
                 modelSizeY = size.y || 1.0;
                 console.log('ModelScene: Model size:', size, 'Center:', center);
 
-                // Exact centering
-                model.position.set(-center.x, -center.y - modelSizeY * 0.1, -center.z);
+                // Define static offsets
+                initialOffsetX = -center.x;
+                initialOffsetY = -center.y - modelSizeY * 0.15; // Shift down slightly to center head/upper body
+                initialOffsetZ = -center.z;
+
+                // Position model at center
+                model.position.set(initialOffsetX, initialOffsetY, initialOffsetZ);
 
                 // Adjust camera distance depending on model size
                 const maxDim = Math.max(size.x, size.y, size.z);
                 let cameraZ = 5; // Default fallback
                 if (maxDim > 0.05) {
                     const fov = camera.fov * (Math.PI / 180);
-                    cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
+                    cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.55;
                 }
                 
                 console.log('ModelScene: Camera Z set to', cameraZ);
@@ -184,11 +191,9 @@ export function ModelScene({ modelPath, className }: ModelSceneProps) {
                     model.rotation.x = currentRotation.x * 0.3;
                 }
 
-                // Add gentle natural floating animation
+                // Add gentle natural floating animation using static initialOffset
                 const elapsedTime = clock.getElapsedTime();
-                const box = new THREE.Box3().setFromObject(model);
-                const center = box.getCenter(new THREE.Vector3());
-                model.position.y = (-center.y - modelSizeY * 0.1) + Math.sin(elapsedTime * 1.5) * 0.04;
+                model.position.y = initialOffsetY + Math.sin(elapsedTime * 1.5) * 0.04;
             }
 
             renderer.render(scene, camera);
