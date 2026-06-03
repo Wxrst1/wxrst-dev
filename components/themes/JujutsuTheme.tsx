@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../supabase';
 import Guestbook from '../Guestbook';
 
@@ -21,6 +22,7 @@ const JUJUTSU_CHARS: Record<JujutsuCharacter, {
     glow: string;
     particles: 'CURSED' | 'SLASHES' | 'BLOOD';
     accent: string;
+    image: string;
 }> = {
     YUJI: {
         name: 'Yuji Itadori',
@@ -30,7 +32,8 @@ const JUJUTSU_CHARS: Record<JujutsuCharacter, {
         color: '#0ea5e9', // Cursed blue energy
         glow: 'rgba(14,165,233,0.3)',
         accent: '#f43f5e', // Pink hair accent
-        particles: 'CURSED'
+        particles: 'CURSED',
+        image: '/yuji_illustration.png'
     },
     SUKUNA: {
         name: 'Ryomen Sukuna',
@@ -40,7 +43,8 @@ const JUJUTSU_CHARS: Record<JujutsuCharacter, {
         color: '#dc2626', // Blood crimson
         glow: 'rgba(220,38,38,0.4)',
         accent: '#7c1a22',
-        particles: 'SLASHES'
+        particles: 'SLASHES',
+        image: '/sukuna_illustration.png'
     },
     CHOSO: {
         name: 'Choso',
@@ -50,7 +54,8 @@ const JUJUTSU_CHARS: Record<JujutsuCharacter, {
         color: '#991b1b', // Dried blood maroon
         glow: 'rgba(153,27,27,0.35)',
         accent: '#facc15', // Purple-yellow blood manipulation accent
-        particles: 'BLOOD'
+        particles: 'BLOOD',
+        image: '/choso_illustration.png'
     }
 };
 
@@ -86,7 +91,7 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
 
     // --- INTRO DISPLAY ---
     useEffect(() => {
-        const timer = setTimeout(() => setIsIntro(false), 3000);
+        const timer = setTimeout(() => setIsIntro(false), 2500);
         return () => clearTimeout(timer);
     }, []);
 
@@ -142,17 +147,16 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
         window.addEventListener('resize', handleResize);
 
         let lastTime = performance.now();
-        const charConfig = JUJUTSU_CHARS[selectedChar];
 
         // 1. Setup Yuji's Cursed Particles
         const yujiParticles: any[] = [];
-        for (let i = 0; i < 70; i++) {
+        for (let i = 0; i < 60; i++) {
             yujiParticles.push({
                 x: Math.random() * window.innerWidth,
                 y: window.innerHeight + Math.random() * 200,
                 vx: (Math.random() - 0.5) * 1.5,
-                vy: -Math.random() * 2.5 - 0.5,
-                r: Math.random() * 3.5 + 1.5,
+                vy: -Math.random() * 2.0 - 0.5,
+                r: Math.random() * 3.0 + 1.5,
                 o: Math.random() * 0.4 + 0.1,
                 growth: Math.random() * 0.02 - 0.01
             });
@@ -164,23 +168,23 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
             x1: Math.random() * window.innerWidth,
             y1: Math.random() * window.innerHeight,
             angle: Math.random() * Math.PI * 2,
-            length: Math.random() * 150 + 80,
+            length: Math.random() * 120 + 60,
             progress: 0,
-            speed: Math.random() * 4 + 2,
-            opacity: Math.random() * 0.7 + 0.3,
-            glow: Math.random() > 0.5
+            speed: Math.random() * 5 + 3,
+            opacity: Math.random() * 0.6 + 0.2,
+            glow: Math.random() > 0.4
         });
         for (let i = 0; i < 8; i++) slashCuts.push(initSlash());
 
         // 3. Setup Choso's Blood cells
         const bloodCells: any[] = [];
-        for (let i = 0; i < 90; i++) {
+        for (let i = 0; i < 70; i++) {
             bloodCells.push({
                 x: Math.random() * window.innerWidth,
                 y: Math.random() * window.innerHeight,
                 vx: (Math.random() - 0.5) * 2,
-                vy: Math.random() * 1.5 + 1.0,
-                r: Math.random() * 4.5 + 2.5,
+                vy: Math.random() * 1.2 + 0.8,
+                r: Math.random() * 4.0 + 2.0,
                 pulse: Math.random() * Math.PI
             });
         }
@@ -188,7 +192,7 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
         // 4. Black Flash strike lightning renderer helper
         const renderLightning = (x: number, y: number, color: string) => {
             ctx.save();
-            ctx.shadowBlur = 30;
+            ctx.shadowBlur = 35;
             ctx.shadowColor = '#000000';
             
             // Draw central Black Flash core
@@ -203,7 +207,7 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
             const stepY = (window.innerHeight - y) / segments;
 
             for (let i = 1; i <= segments; i++) {
-                curX += (Math.random() - 0.5) * 120;
+                curX += (Math.random() - 0.5) * 110;
                 curY += stepY;
                 ctx.lineTo(curX, curY);
             }
@@ -230,12 +234,6 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
             ctx.fillStyle = '#020205';
             ctx.fillRect(0, 0, w, h);
 
-            // Lerp center tracking values
-            const targetX = (mouseRef.current.x - w / 2) / (w / 2);
-            const targetY = (mouseRef.current.y - h / 2) / (h / 2);
-            lookOffset.current.x += (targetX - lookOffset.current.x) * 0.1;
-            lookOffset.current.y += (targetY - lookOffset.current.y) * 0.1;
-
             if (selectedChar === 'YUJI') {
                 // Render Cursed Energy updrift
                 ctx.save();
@@ -247,13 +245,13 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
                     if (p.y < -20) {
                         p.y = h + Math.random() * 100;
                         p.x = Math.random() * w;
-                        p.r = Math.random() * 3.5 + 1.5;
+                        p.r = Math.random() * 3.0 + 1.5;
                     }
 
                     // Draw blue flame circles
                     ctx.fillStyle = '#0ea5e9';
                     ctx.globalAlpha = p.o * (1 - p.y / h);
-                    ctx.shadowBlur = 12;
+                    ctx.shadowBlur = 10;
                     ctx.shadowColor = '#0284c7';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
@@ -286,13 +284,11 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
 
                     // Slashing red slash line
                     ctx.strokeStyle = '#dc2626';
-                    ctx.lineWidth = s.glow ? 2.5 : 1.0;
+                    ctx.lineWidth = s.glow ? 2.0 : 1.0;
                     ctx.globalAlpha = s.opacity * (1 - s.progress);
                     if (s.glow) {
-                        ctx.shadowBlur = 15;
+                        ctx.shadowBlur = 12;
                         ctx.shadowColor = '#dc2626';
-                    } else {
-                        ctx.shadowBlur = 0;
                     }
                     ctx.beginPath();
                     ctx.moveTo(startX, startY);
@@ -312,9 +308,8 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
                     const dy = mouseRef.current.y - cell.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
-                    if (dist < 320) {
-                        // Gravitate
-                        const strength = (1 - dist / 320) * 80;
+                    if (dist < 280) {
+                        const strength = (1 - dist / 280) * 70;
                         cell.x += (dx / dist) * strength * dt;
                         cell.y += (dy / dist) * strength * dt;
                     }
@@ -328,20 +323,20 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
                         cell.x = Math.random() * w;
                     }
 
-                    const size = cell.r + Math.sin(cell.pulse) * 1.5;
+                    const size = cell.r + Math.sin(cell.pulse) * 1.2;
 
                     // Draw organic red cell
                     ctx.fillStyle = '#7f1d1d';
                     ctx.shadowBlur = 4;
                     ctx.shadowColor = '#991b1b';
-                    ctx.globalAlpha = 0.55;
+                    ctx.globalAlpha = 0.50;
                     ctx.beginPath();
                     ctx.arc(cell.x, cell.y, size, 0, Math.PI * 2);
                     ctx.fill();
 
                     // Inner highlight
                     ctx.fillStyle = '#b91c1c';
-                    ctx.globalAlpha = 0.8;
+                    ctx.globalAlpha = 0.7;
                     ctx.beginPath();
                     ctx.arc(cell.x - size * 0.25, cell.y - size * 0.25, size * 0.35, 0, Math.PI * 2);
                     ctx.fill();
@@ -366,90 +361,9 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
         setTimeout(() => setBlackFlashStrike(prev => ({ ...prev, active: false })), 600);
     };
 
-    // Memoize links data layout for performance rendering
-    const linksContent = React.useMemo(() => {
-        const char = JUJUTSU_CHARS[selectedChar];
-        return (
-            <div className="relative z-20 container mx-auto px-6 pt-40 pb-32 pointer-events-none">
-                <header className="max-w-6xl mx-auto mb-36 flex flex-col items-center text-center">
-                    {/* Kanji Background Overlay */}
-                    <div className="relative mb-8">
-                        <div className="absolute inset-0 blur-[100px] opacity-15 transition-colors duration-500" style={{ backgroundColor: char.color }} />
-                        <span className="text-[120px] lg:text-[180px] font-black text-white/5 select-none font-sans absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap">{char.kanji}</span>
-                        <h1 className="text-6xl lg:text-[110px] font-sans font-black italic tracking-tighter uppercase leading-[0.9] relative text-white">
-                            {profile.name}
-                        </h1>
-                    </div>
-
-                    <div className="max-w-2xl space-y-10">
-                        <p className="text-xl lg:text-3xl font-light italic text-neutral-400 font-serif leading-relaxed">
-                            "{profile.bio}"
-                        </p>
-
-                        <div className="flex flex-wrap justify-center gap-4 pointer-events-auto">
-                            {Object.entries(profile.socials || {})
-                                .filter(([_, val]) => val && typeof val === 'string' && val.trim() !== '')
-                                .map(([key, val]) => (
-                                    <a 
-                                        key={key} 
-                                        href={val as string} 
-                                        target="_blank" 
-                                        rel="noreferrer"
-                                        className="group relative px-8 py-3.5 bg-black/80 border border-white/5 overflow-hidden transition-all duration-300 rounded-sm"
-                                    >
-                                        <div className="absolute inset-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300" style={{ backgroundColor: `${char.color}15` }} />
-                                        <span className="relative text-[9px] font-mono tracking-[0.3em] uppercase font-bold text-neutral-400 group-hover:text-white transition-colors">{key}</span>
-                                    </a>
-                                ))}
-                        </div>
-                    </div>
-                </header>
-
-                <main className="max-w-5xl mx-auto mb-48 text-left">
-                    <div className="mb-16 flex items-end justify-between border-b border-white/5 pb-6">
-                        <h2 className="text-[10px] font-mono tracking-[1.2em] text-zinc-500 uppercase font-black">Cursed_Pathways</h2>
-                        <span className="text-5xl font-black text-white/5 select-none font-sans uppercase" style={{ color: `${char.color}05` }}>咒術</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-8 pointer-events-auto">
-                        {data.map((item, i) => (
-                            <a
-                                key={item.id} 
-                                href={item.url} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                onClick={() => onLinkClick(item.id)}
-                                className="group block relative overflow-hidden bg-zinc-950/40 border border-white/5 rounded-sm hover:border-cyan-500/30 transition-all duration-300"
-                                style={{ hoverBorderColor: `${char.color}40` } as any}
-                            >
-                                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-0 transition-transform duration-500 ease-out" style={{ backgroundColor: `${char.color}05` }} />
-                                <div className="relative p-10 flex flex-col sm:flex-row items-start sm:items-center gap-8">
-                                    <div className="text-4xl font-sans font-black italic opacity-5 group-hover:opacity-20 transition-all" style={{ color: char.color }}>0{i + 1}</div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3">
-                                            <h3 className="text-3xl lg:text-4xl font-sans font-black italic uppercase tracking-tight text-neutral-300 group-hover:text-white transition-colors">
-                                                {item.title}
-                                            </h3>
-                                            <span className="text-[8px] font-mono px-2 py-0.5 border border-white/10 text-white/30 tracking-widest uppercase">{item.category}</span>
-                                        </div>
-                                        <p className="mt-2 text-zinc-500 group-hover:text-zinc-300 transition-colors font-serif italic text-sm lg:text-base">
-                                            {item.description}
-                                        </p>
-                                    </div>
-                                    <div className="text-3xl opacity-20 group-hover:opacity-90 group-hover:scale-110 transition-all duration-300" style={{ color: char.color }}>🤞</div>
-                                </div>
-                            </a>
-                        ))}
-                    </div>
-                </main>
-            </div>
-        );
-    }, [profile, data, selectedChar, onLinkClick]);
-
     if (isIntro) {
         return (
             <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center p-8 overflow-hidden font-sans">
-                {/* Intro domains screen */}
                 <div className="relative animate-pulse mb-8">
                     <span className="text-[120px] font-black text-red-600 opacity-20 antialiased font-serif">呪術廻戦</span>
                 </div>
@@ -505,8 +419,131 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
                 <span className="text-[9px] font-mono font-black uppercase tracking-wider hidden sm:inline" style={{ color: currentChar.color }}>JUJUTSU_VESSEL</span>
             </div>
 
-            {/* MAIN LINKS LAYER */}
-            {linksContent}
+            {/* MAIN TWO-COLUMN CONTENT LAYER WITH MOTION */}
+            <div className="relative z-20 container mx-auto px-6 pt-32 pb-24 min-h-screen flex flex-col lg:flex-row items-center justify-between gap-12 pointer-events-none">
+                
+                {/* Left Section: Info Cards, Socials, Links (Staggered Animation) */}
+                <motion.div 
+                    initial={{ opacity: 0, x: -50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="w-full lg:w-1/2 space-y-12 pointer-events-auto text-left select-text"
+                >
+                    <header className="space-y-6">
+                        <div className="relative inline-block">
+                            <span className="text-7xl lg:text-[110px] font-sans font-black text-white/5 select-none absolute -top-8 -left-4 whitespace-nowrap tracking-widest">{currentChar.kanji}</span>
+                            <h1 className="text-5xl lg:text-7xl font-sans font-black italic tracking-tighter uppercase leading-[0.9] relative text-white">
+                                {profile.name}
+                            </h1>
+                        </div>
+                        
+                        <p className="text-lg lg:text-2xl font-light italic text-neutral-400 font-serif leading-relaxed">
+                            "{profile.bio}"
+                        </p>
+
+                        <div className="flex flex-wrap gap-3 pt-2">
+                            {Object.entries(profile.socials || {})
+                                .filter(([_, val]) => val && typeof val === 'string' && val.trim() !== '')
+                                .map(([key, val]) => (
+                                    <a 
+                                        key={key} 
+                                        href={val as string} 
+                                        target="_blank" 
+                                        rel="noreferrer"
+                                        className="group relative px-6 py-2.5 bg-black/85 border border-white/5 overflow-hidden transition-all duration-300 rounded-sm"
+                                    >
+                                        <div className="absolute inset-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300" style={{ backgroundColor: `${currentChar.color}15` }} />
+                                        <span className="relative text-[9px] font-mono tracking-[0.3em] uppercase font-bold text-neutral-400 group-hover:text-white transition-colors">{key}</span>
+                                    </a>
+                                ))}
+                        </div>
+                    </header>
+
+                    {/* Pathways list */}
+                    <div className="space-y-6">
+                        <h2 className="text-[10px] font-mono tracking-[1.2em] text-zinc-500 uppercase font-black border-b border-white/5 pb-3">Cursed_Pathways</h2>
+                        <div className="space-y-4">
+                            {data.map((item, i) => (
+                                <a
+                                    key={item.id} 
+                                    href={item.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    onClick={() => onLinkClick(item.id)}
+                                    className="group block relative overflow-hidden bg-zinc-950/40 border border-white/5 rounded-sm hover:border-cyan-500/30 transition-all duration-300"
+                                    style={{ hoverBorderColor: `${currentChar.color}40` } as any}
+                                >
+                                    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-0 transition-transform duration-500 ease-out" style={{ backgroundColor: `${currentChar.color}05` }} />
+                                    <div className="relative p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                                        <div className="text-3xl font-sans font-black italic opacity-5 group-hover:opacity-20 transition-all" style={{ color: currentChar.color }}>0{i + 1}</div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3">
+                                                <h3 className="text-2xl lg:text-3xl font-sans font-black italic uppercase tracking-tight text-neutral-300 group-hover:text-white transition-colors">
+                                                    {item.title}
+                                                </h3>
+                                                <span className="text-[8px] font-mono px-2 py-0.5 border border-white/10 text-white/30 tracking-widest uppercase">{item.category}</span>
+                                            </div>
+                                            <p className="mt-2 text-zinc-500 group-hover:text-zinc-300 transition-colors font-serif italic text-xs lg:text-sm">
+                                                {item.description}
+                                            </p>
+                                        </div>
+                                        <div className="text-2xl opacity-20 group-hover:opacity-90 group-hover:scale-110 transition-all duration-300" style={{ color: currentChar.color }}>🤞</div>
+                                    </div>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* Right Section: Large Character Visual Projection (Framer Motion spring switch) */}
+                <div className="w-full lg:w-1/2 flex items-center justify-center h-[55vh] lg:h-[75vh] min-h-[400px] relative pointer-events-auto">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={selectedChar}
+                            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -40, scale: 0.95 }}
+                            transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+                            className="relative w-full max-w-[380px] aspect-[3/4] flex items-center justify-center"
+                        >
+                            {/* Colorful background radial aura glow */}
+                            <div 
+                                className="absolute inset-0 rounded-full blur-[100px] opacity-25 animate-pulse transition-colors duration-500" 
+                                style={{ backgroundColor: currentChar.color }} 
+                            />
+
+                            {/* Framing box outline */}
+                            <div className="border border-white/10 bg-zinc-950/20 backdrop-blur-sm p-4 rounded-sm relative group overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.8)] w-full h-full flex items-center justify-center">
+                                {/* Cyber corner angles */}
+                                <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-white/20" />
+                                <div className="absolute top-0 right-0 w-4 h-4 border-t border-r border-white/20" />
+                                <div className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-white/20" />
+                                <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-white/20" />
+
+                                <img 
+                                    src={currentChar.image} 
+                                    alt={currentChar.name} 
+                                    className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_20px_var(--theme-color)] pointer-events-none select-none rounded-sm"
+                                />
+
+                                {/* Matrix scanning grid overlay */}
+                                <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,rgba(255,255,255,0.02)_50%)] bg-[size:100%_4px] pointer-events-none" />
+                            </div>
+
+                            {/* Kanji visual element floating dynamically behind/near */}
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.6 }}
+                                animate={{ opacity: 0.15, scale: 1 }}
+                                transition={{ delay: 0.2 }}
+                                className="absolute -bottom-6 -left-6 text-7xl font-sans font-black pointer-events-none tracking-widest select-none"
+                                style={{ color: currentChar.color }}
+                            >
+                                {currentChar.kanji}
+                            </motion.div>
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+            </div>
 
             {/* DATA STATISTICS SECTION */}
             <div className="relative z-20 container mx-auto px-6">
@@ -525,7 +562,7 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
                 </div>
 
                 {/* REACTIONS GRID & GUESTBOOK INLINE */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start max-w-6xl mx-auto text-left pb-32">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start max-w-6xl mx-auto text-left pb-32 pointer-events-auto">
                     <div>
                         <div className="mb-10">
                             <h2 className="text-[10px] font-mono tracking-[0.8em] text-zinc-500 uppercase mb-4 font-black">Cursed_Resonance</h2>
@@ -570,7 +607,6 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
                     from { width: 0; height: 0; transform: translate(-50%, -50%); opacity: 1; }
                     to { width: 1500px; height: 1500px; transform: translate(-50%, -50%); opacity: 0; }
                 }
-                .children-auto-pointer * { pointer-events: auto; }
             `}</style>
         </div>
     );
