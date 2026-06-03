@@ -4,6 +4,7 @@ import { supabase } from '../../supabase';
 import Guestbook from '../Guestbook';
 import { SplineScene } from '../ui/spline';
 import { Spotlight } from '../ui/spotlight';
+import { ModelScene } from '../ui/model-scene';
 
 interface JujutsuThemeProps {
     data: any[];
@@ -588,17 +589,10 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
                                 {/* 3D Spline Scene or Sketchfab Embed overlay */}
                                 <div className="w-full h-full z-0 p-2">
                                     {selectedChar === 'CHOSO' ? (
-                                        <div className="absolute inset-0 w-full h-full overflow-hidden rounded-sm bg-transparent">
-                                            <iframe 
-                                                title="Choso | Jujutsu Kaisen"
-                                                className="w-full h-[calc(100%+80px)] -mt-[40px] border-0 pointer-events-auto"
-                                                src="https://sketchfab.com/models/c07a003fa3ea4be98db98ad8e4e68506/embed?autostart=1&preload=1&transparent=1&ui_controls=0&ui_infos=0&ui_watermark=0&ui_stop=0&ui_settings=0&ui_vr=0&ui_fullscreen=0&ui_ar=0&ui_help=0&dnt=1" 
-                                                allow="autoplay; fullscreen; xr-spatial-tracking"
-                                                xr-spatial-tracking="true"
-                                                execution-while-out-of-viewport="true"
-                                                execution-while-not-rendered="true"
-                                            />
-                                        </div>
+                                        <ModelScene 
+                                            modelPath="/scene.gltf"
+                                            className="w-full h-full"
+                                        />
                                     ) : (
                                         <SplineScene 
                                             scene={currentChar.scene}

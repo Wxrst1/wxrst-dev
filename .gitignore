@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Root level 3D model files (copied to public/)
+/scene.gltf
+/scene.bin
+/textures/
