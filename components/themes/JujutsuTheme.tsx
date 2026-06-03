@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../supabase';
 import Guestbook from '../Guestbook';
+import { SplineScene } from '../ui/spline';
+import { Spotlight } from '../ui/spotlight';
 
 interface JujutsuThemeProps {
     data: any[];
@@ -23,6 +25,7 @@ const JUJUTSU_CHARS: Record<JujutsuCharacter, {
     particles: 'CURSED' | 'SLASHES' | 'BLOOD';
     accent: string;
     image: string;
+    scene: string;
 }> = {
     YUJI: {
         name: 'Yuji Itadori',
@@ -33,7 +36,8 @@ const JUJUTSU_CHARS: Record<JujutsuCharacter, {
         glow: 'rgba(14,165,233,0.3)',
         accent: '#f43f5e', // Pink hair accent
         particles: 'CURSED',
-        image: '/yuji_illustration.png'
+        image: '/yuji_illustration.png',
+        scene: 'https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode'
     },
     SUKUNA: {
         name: 'Ryomen Sukuna',
@@ -44,7 +48,8 @@ const JUJUTSU_CHARS: Record<JujutsuCharacter, {
         glow: 'rgba(220,38,38,0.4)',
         accent: '#7c1a22',
         particles: 'SLASHES',
-        image: '/sukuna_illustration.png'
+        image: '/sukuna_illustration.png',
+        scene: 'https://prod.spline.design/p8Fp0lG-5lS7f4uC/scene.splinecode'
     },
     CHOSO: {
         name: 'Choso',
@@ -55,7 +60,8 @@ const JUJUTSU_CHARS: Record<JujutsuCharacter, {
         glow: 'rgba(153,27,27,0.35)',
         accent: '#facc15', // Purple-yellow blood manipulation accent
         particles: 'BLOOD',
-        image: '/choso_illustration.png'
+        image: '/choso_illustration.png',
+        scene: 'https://prod.spline.design/6Wq1Q7YRyKZo-3x5/scene.splinecode'
     }
 };
 
@@ -565,19 +571,27 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
                                 onMouseMove={handleMouseMoveCard}
                                 onMouseLeave={handleMouseLeaveCard}
                                 style={tiltStyle}
-                                className="border border-white/10 bg-zinc-950/20 backdrop-blur-sm p-4 rounded-sm relative group overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.8)] w-full h-full flex items-center justify-center select-none"
+                                className="border border-white/10 bg-black/80 backdrop-blur-sm rounded-sm relative group overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.9)] w-full h-full flex items-center justify-center select-none"
                             >
+                                {/* Aceternity/Ibelick Mouse-tracking Spotlight */}
+                                <Spotlight 
+                                    className="-top-40 left-0 md:left-24 md:-top-20"
+                                    size={350}
+                                />
+
                                 {/* Cyber corner angles */}
                                 <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-white/20 z-10" />
                                 <div className="absolute top-0 right-0 w-4 h-4 border-t border-r border-white/20 z-10" />
                                 <div className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-white/20 z-10" />
                                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-white/20 z-10" />
 
-                                <img 
-                                    src={currentChar.image} 
-                                    alt={currentChar.name} 
-                                    className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_20px_var(--theme-color)] pointer-events-none select-none rounded-sm z-0"
-                                />
+                                {/* 3D Spline Scene overlay */}
+                                <div className="w-full h-full z-0 p-2">
+                                    <SplineScene 
+                                        scene={currentChar.scene}
+                                        className="w-full h-full"
+                                    />
+                                </div>
 
                                 {/* Specular holographic sheen glare */}
                                 <div 
