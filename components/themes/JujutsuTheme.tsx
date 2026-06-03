@@ -72,6 +72,53 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
     const mouseRef = useRef({ x: 0, y: 0 });
     const lookOffset = useRef({ x: 0, y: 0 });
     const requestRef = useRef<number>();
+
+    // 3D Card Hover Perspective states
+    const cardRef = useRef<HTMLDivElement>(null);
+    const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
+    const [glareStyle, setGlareStyle] = useState<React.CSSProperties>({ opacity: 0 });
+
+    const handleMouseMoveCard = (e: React.MouseEvent<HTMLDivElement>) => {
+        const card = cardRef.current;
+        if (!card) return;
+
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const width = rect.width;
+        const height = rect.height;
+
+        // Pitch & Yaw tilt angles
+        const rotX = ((y - height / 2) / (height / 2)) * -12; 
+        const rotY = ((x - width / 2) / (width / 2)) * 12;
+
+        setTiltStyle({
+            transform: `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(1.03, 1.03, 1.03)`,
+            transition: 'transform 0.08s ease-out'
+        });
+
+        // Specular glow reflection coordinates
+        const pctX = (x / width) * 100;
+        const pctY = (y / height) * 100;
+
+        setGlareStyle({
+            opacity: 0.18,
+            background: `radial-gradient(circle at ${pctX}% ${pctY}%, rgba(255,255,255,0.4) 0%, transparent 60%)`,
+            transition: 'opacity 0.08s ease-out'
+        });
+    };
+
+    const handleMouseLeaveCard = () => {
+        setTiltStyle({
+            transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)',
+            transition: 'transform 0.5s ease-out'
+        });
+        setGlareStyle({
+            opacity: 0,
+            transition: 'all 0.5s ease-out'
+        });
+    };
     
     // Emojis for JJK
     const jjkEmojis = ['🤞', '👹', '💀', '🔥', '🩸', '🥋'];
@@ -512,22 +559,34 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
                                 style={{ backgroundColor: currentChar.color }} 
                             />
 
-                            {/* Framing box outline */}
-                            <div className="border border-white/10 bg-zinc-950/20 backdrop-blur-sm p-4 rounded-sm relative group overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.8)] w-full h-full flex items-center justify-center">
+                            {/* Framing box outline (Tilting container) */}
+                            <div 
+                                ref={cardRef}
+                                onMouseMove={handleMouseMoveCard}
+                                onMouseLeave={handleMouseLeaveCard}
+                                style={tiltStyle}
+                                className="border border-white/10 bg-zinc-950/20 backdrop-blur-sm p-4 rounded-sm relative group overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.8)] w-full h-full flex items-center justify-center select-none"
+                            >
                                 {/* Cyber corner angles */}
-                                <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-white/20" />
-                                <div className="absolute top-0 right-0 w-4 h-4 border-t border-r border-white/20" />
-                                <div className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-white/20" />
-                                <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-white/20" />
+                                <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-white/20 z-10" />
+                                <div className="absolute top-0 right-0 w-4 h-4 border-t border-r border-white/20 z-10" />
+                                <div className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-white/20 z-10" />
+                                <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-white/20 z-10" />
 
                                 <img 
                                     src={currentChar.image} 
                                     alt={currentChar.name} 
-                                    className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_20px_var(--theme-color)] pointer-events-none select-none rounded-sm"
+                                    className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_20px_var(--theme-color)] pointer-events-none select-none rounded-sm z-0"
+                                />
+
+                                {/* Specular holographic sheen glare */}
+                                <div 
+                                    style={glareStyle}
+                                    className="absolute inset-0 pointer-events-none z-20 mix-blend-color-dodge"
                                 />
 
                                 {/* Matrix scanning grid overlay */}
-                                <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,rgba(255,255,255,0.02)_50%)] bg-[size:100%_4px] pointer-events-none" />
+                                <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,rgba(255,255,255,0.02)_50%)] bg-[size:100%_4px] pointer-events-none z-10" />
                             </div>
 
                             {/* Kanji visual element floating dynamically behind/near */}
