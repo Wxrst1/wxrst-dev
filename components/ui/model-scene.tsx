@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 interface ModelSceneProps {
     modelPath: string;
@@ -47,6 +48,15 @@ export function ModelScene({ modelPath, className }: ModelSceneProps) {
         renderer.setSize(initialWidth, initialHeight);
         renderer.shadowMap.enabled = true;
 
+        // 3.5 Setup OrbitControls for mouse drag interaction
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.enableZoom = true;
+        controls.maxDistance = 15;
+        controls.minDistance = 1;
+        controls.enablePan = false; // Lock panning to keep Choso centered
+        
         // 4. Setup Lighting (Very bright and high-contrast)
         const ambientLight = new THREE.AmbientLight(0xffffff, 2.5);
         scene.add(ambientLight);
@@ -178,17 +188,16 @@ export function ModelScene({ modelPath, className }: ModelSceneProps) {
             currentRotation.x += (targetRotation.x - currentRotation.x) * 0.08;
             currentRotation.y += (targetRotation.y - currentRotation.y) * 0.08;
 
+            // Update OrbitControls
+            controls.update();
+
             if (model) {
                 if (headBone) {
-                    headBone.rotation.y = currentRotation.y * 0.8;
-                    headBone.rotation.x = currentRotation.x * 0.8;
+                    headBone.rotation.y = currentRotation.y * 0.5;
+                    headBone.rotation.x = currentRotation.x * 0.5;
                 } else if (neckBone) {
-                    neckBone.rotation.y = currentRotation.y * 0.8;
-                    neckBone.rotation.x = currentRotation.x * 0.8;
-                } else {
-                    // Turn entire character model slightly
-                    model.rotation.y = currentRotation.y;
-                    model.rotation.x = currentRotation.x * 0.3;
+                    neckBone.rotation.y = currentRotation.y * 0.5;
+                    neckBone.rotation.x = currentRotation.x * 0.5;
                 }
 
                 // Add gentle natural floating animation using static initialOffset
