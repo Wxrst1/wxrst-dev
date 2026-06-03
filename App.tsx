@@ -50,6 +50,7 @@ import ExorcismTheme from './components/themes/ExorcismTheme';
 import DragonTheme from './components/themes/DragonTheme';
 import YinYangTheme from './components/themes/YinYangTheme';
 import AkatsukiTheme from './components/themes/AkatsukiTheme';
+import JujutsuTheme from './components/themes/JujutsuTheme';
 
 
 const App: React.FC = () => {
@@ -351,6 +352,7 @@ const App: React.FC = () => {
       case ThemeType.CELESTIAL_EMPIRE: return <DragonTheme {...commonProps} />;
       case ThemeType.YIN_YANG: return <YinYangTheme {...commonProps} />;
       case ThemeType.AKATSUKI: return <AkatsukiTheme {...commonProps} />;
+      case ThemeType.JUJUTSU: return <JujutsuTheme {...commonProps} />;
       case ThemeType.STEAMPUNK:
       default: return <SteampunkTheme {...commonProps} />;
     }
@@ -358,6 +360,19 @@ const App: React.FC = () => {
 
   const renderLoadingScreen = () => {
     switch (theme) {
+
+      case ThemeType.JUJUTSU:
+        return (
+          <div className="flex flex-col items-center justify-center min-h-screen bg-black text-red-600 font-sans uppercase tracking-[0.2em] relative overflow-hidden">
+            <div className="absolute w-72 h-72 border border-red-600/20 rounded-full animate-[spin_10s_linear_infinite]" />
+            <div className="absolute w-96 h-96 border border-dashed border-red-500/10 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
+            <div className="relative z-10 flex flex-col items-center gap-8 text-center">
+              <span className="text-[120px] font-black text-red-700 opacity-20 antialiased font-serif animate-pulse">領域展開</span>
+              <div className="text-xl tracking-[0.3em] text-white font-black">DOMAIN_EXPANSION_INIT</div>
+              <div className="text-xs text-red-500/60 animate-pulse font-mono">Syncing Cursed Energy Signature...</div>
+            </div>
+          </div>
+        );
 
       case ThemeType.YIN_YANG:
         return (
@@ -445,7 +460,7 @@ const App: React.FC = () => {
       <SEOHead profile={profile} currentTheme={theme} />
 
       {/* Interactive Global Elements */}
-      {theme !== ThemeType.YIN_YANG && theme !== ThemeType.AKATSUKI && (
+      {theme !== ThemeType.YIN_YANG && theme !== ThemeType.AKATSUKI && theme !== ThemeType.JUJUTSU && (
         <>
           <VisitorCounter theme={theme} />
           <QuickReactions theme={theme} />
@@ -469,7 +484,8 @@ const App: React.FC = () => {
         ThemeType.THE_EXORCISM,
         ThemeType.CELESTIAL_EMPIRE,
         ThemeType.YIN_YANG,
-        ThemeType.AKATSUKI
+        ThemeType.AKATSUKI,
+        ThemeType.JUJUTSU
       ].includes(theme)) && <Guestbook theme={theme} />}
 
       <SecurityGateway

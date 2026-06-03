@@ -40,7 +40,8 @@ export enum ThemeType {
   THE_EXORCISM = 'THE_EXORCISM',
   CELESTIAL_EMPIRE = 'CELESTIAL_EMPIRE',
   YIN_YANG = 'YIN_YANG',
-  AKATSUKI = 'AKATSUKI'
+  AKATSUKI = 'AKATSUKI',
+  JUJUTSU = 'JUJUTSU'
 }
 
 export interface UserProfile {

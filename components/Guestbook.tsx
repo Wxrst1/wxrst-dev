@@ -71,6 +71,7 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
     const isHorror = theme === ThemeType.BLOOD_STAIN || theme === ThemeType.HORROR;
     const isCelestial = theme === ThemeType.CELESTIAL_EMPIRE;
     const isAkatsuki = theme === ThemeType.AKATSUKI;
+    const isJujutsu = theme === ThemeType.JUJUTSU;
 
     let inputClasses = "w-full bg-black border border-white/10 p-3 text-xs text-white outline-none focus:border-cyan-500 font-mono";
     let buttonClasses = "px-6 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-cyan-500 disabled:opacity-50 transition-colors";
@@ -96,6 +97,12 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
         commentBorder = "border-red-900";
         commentName = "text-red-600 font-['Cinzel_Decorative'] font-black tracking-widest";
         commentText = "text-stone-400 font-serif italic";
+    } else if (isJujutsu) {
+        inputClasses = "w-full bg-zinc-950 border border-red-950/20 p-3 text-xs text-red-500 outline-none focus:border-red-600 font-mono placeholder:text-red-950/40 uppercase tracking-widest";
+        buttonClasses = "px-6 bg-red-950 border border-red-900/40 text-red-400 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-red-600 hover:text-white disabled:opacity-50 transition-all";
+        commentBorder = "border-red-950";
+        commentName = "text-red-500 font-sans font-black tracking-widest";
+        commentText = "text-neutral-400 font-sans italic";
     }
 
     // Pagination Logic
@@ -108,14 +115,14 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
             {/* Form */}
             <form onSubmit={handleSubmit} className="mb-6 space-y-2">
                 <input
-                    placeholder={isHorror ? "Sign the Covenant..." : isAkatsuki ? "Designation..." : "Identity / Name"}
+                    placeholder={isHorror ? "Sign the Covenant..." : isAkatsuki ? "Designation..." : isJujutsu ? "Cursed Vessel Name / Identity..." : "Identity / Name"}
                     className={inputClasses}
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
                 />
                 <div className="flex gap-2">
                     <input
-                        placeholder={isHorror ? "Whisper your last words..." : isAkatsuki ? "Record transmission..." : "Leave a transmission..."}
+                        placeholder={isHorror ? "Whisper your last words..." : isAkatsuki ? "Record transmission..." : isJujutsu ? "Imbue cursed message..." : "Leave a transmission..."}
                         className={inputClasses + " flex-1"}
                         value={newContent}
                         onChange={e => setNewContent(e.target.value)}
@@ -124,7 +131,7 @@ const Guestbook: React.FC<GuestbookProps> = ({ isInline = false, theme }) => {
                         disabled={isSubmitting}
                         className={buttonClasses}
                     >
-                        {isHorror ? "INVOKE" : isAkatsuki ? "SEAL" : "SEND"}
+                        {isHorror ? "INVOKE" : isAkatsuki ? "SEAL" : isJujutsu ? "EXORCISE" : "SEND"}
                     </button>
                 </div>
             </form>
