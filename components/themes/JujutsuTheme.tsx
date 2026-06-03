@@ -585,12 +585,24 @@ const JujutsuTheme: React.FC<JujutsuThemeProps> = ({ data, profile, onLinkClick 
                                 <div className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-white/20 z-10" />
                                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-white/20 z-10" />
 
-                                {/* 3D Spline Scene overlay */}
+                                {/* 3D Spline Scene or Sketchfab Embed overlay */}
                                 <div className="w-full h-full z-0 p-2">
-                                    <SplineScene 
-                                        scene={currentChar.scene}
-                                        className="w-full h-full"
-                                    />
+                                    {selectedChar === 'CHOSO' ? (
+                                        <iframe 
+                                            title="Choso | Jujutsu Kaisen"
+                                            className="w-full h-full border-0 rounded-sm"
+                                            src="https://sketchfab.com/models/c07a003fa3ea4be98db98ad8e4e68506/embed?autostart=1&preload=1&transparent=1&card=0" 
+                                            allow="autoplay; fullscreen; xr-spatial-tracking"
+                                            xr-spatial-tracking="true"
+                                            execution-while-out-of-viewport="true"
+                                            execution-while-not-rendered="true"
+                                        />
+                                    ) : (
+                                        <SplineScene 
+                                            scene={currentChar.scene}
+                                            className="w-full h-full"
+                                        />
+                                    )}
                                 </div>
 
                                 {/* Specular holographic sheen glare */}
